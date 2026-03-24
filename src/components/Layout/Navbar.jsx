@@ -4,7 +4,6 @@ const Navbar = ({ activeTab, setActiveTab }) => {
   const tabs = [
     { id: 'plan', icon: '📋', label: 'My Plan' },
     { id: 'calories', icon: '🔥', label: 'Nutrition' },
-    { id: 'photos', icon: '📸', label: 'Progress' },
     { id: 'profile', icon: '👤', label: 'Profile' }
   ];
 

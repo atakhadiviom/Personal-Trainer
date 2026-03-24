@@ -11,13 +11,11 @@ import StepBody from './components/Wizard/StepBody';
 import StepProblems from './components/Wizard/StepProblems';
 import StepGym from './components/Wizard/StepGym';
 import StepWatch from './components/Wizard/StepWatch';
-import StepPhoto from './components/Wizard/StepPhoto';
 import LoadingAI from './components/Wizard/LoadingAI';
 
 import Navbar from './components/Layout/Navbar';
 import MyPlan from './components/Dashboard/MyPlan';
 import CalorieTrackerPage from './components/Dashboard/CalorieTrackerPage';
-import ProgressGallery from './components/Dashboard/ProgressGallery';
 import ProfilePage from './components/Dashboard/ProfilePage';
 
 function App() {
@@ -66,7 +64,7 @@ function App() {
   const prevStep = () => setStep(prev => prev - 1);
 
   const generatePlan = async () => {
-    setStep(6);
+    setStep(5);
     try {
       const model = getGenerativeModel(aiInstance, { 
         model: "gemini-2.0-flash",
@@ -128,9 +126,8 @@ function App() {
       case 1: return <StepBody formData={formData} updateFormData={updateFormData} nextStep={nextStep} />;
       case 2: return <StepProblems formData={formData} updateFormData={updateFormData} prevStep={prevStep} nextStep={nextStep} />;
       case 3: return <StepGym formData={formData} updateFormData={updateFormData} prevStep={prevStep} nextStep={nextStep} />;
-      case 4: return <StepWatch formData={formData} updateFormData={updateFormData} prevStep={prevStep} nextStep={nextStep} />;
-      case 5: return <StepPhoto formData={formData} updateFormData={updateFormData} prevStep={prevStep} nextStep={generatePlan} />;
-      case 6: return <LoadingAI />;
+      case 4: return <StepWatch formData={formData} updateFormData={updateFormData} prevStep={prevStep} nextStep={generatePlan} />;
+      case 5: return <LoadingAI />;
       default: return <StepBody formData={formData} updateFormData={updateFormData} nextStep={nextStep} />;
     }
   };
@@ -139,7 +136,6 @@ function App() {
     switch (activeTab) {
       case 'plan': return <MyPlan formData={formData} aiPlan={aiPlan} />;
       case 'calories': return <CalorieTrackerPage formData={formData} />;
-      case 'photos': return <ProgressGallery />;
       case 'profile': return <ProfilePage formData={formData} resetWizard={resetWizard} />;
       default: return <MyPlan formData={formData} aiPlan={aiPlan} />;
     }
@@ -164,7 +160,7 @@ function App() {
         <header className="header animate-fade-in">
           <a href="/" className="logo"><span className="gradient-text">NovaFit</span> AI</a>
           <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-            {step < 6 && <div className="step-indicator">Step {step} of 5</div>}
+            {step < 5 && <div className="step-indicator">Step {step} of 4</div>}
             <button onClick={() => signOut(auth)} className="btn-secondary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>Sign Out</button>
           </div>
         </header>
