@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import './index.css';
 
-import { auth, db, app } from './firebase';
+import { auth, db, aiInstance } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import { getGenerativeModel } from 'firebase/ai';
 
 import Login from './components/Auth/Login';
 import StepBody from './components/Wizard/StepBody';
@@ -67,12 +67,29 @@ function App() {
 
   const generatePlan = async () => {
     setStep(6);
-    
     try {
-      const functions = getFunctions(app);
-      const generateFn = httpsCallable(functions, 'generateNovaFitPlan');
-      const result = await generateFn({ formData });
-      const generated = result.data;
+      const model = getGenerativeModel(aiInstance, { 
+        model: "gemini-2.0-flash",
+        generationConfig: { responseMimeType: "application/json" }
+      });
+      
+      const prompt = `You are an elite Gym Trainer. Generate a structured 12-week gym payload for a ${formData.age}yo ${formData.gender}, ${formData.weight}kg, ${formData.height}cm. Goal: ${formData.goal}. Limitations: ${formData.problems}. Gym: ${formData.gymName}. 
+      Return EXACTLY this JSON format and nothing else. No markdown or backticks.
+      {
+        "overview": { "title": "string", "subtitle": "string", "specialNote": "string" },
+        "nutrition": { "macros": { "calories": 2000, "protein": "180g", "carbs": "180g", "fat": "70g" }, "mealPlan": [{"meal": "string", "food": "string"}] },
+        "progression": [ { "phase": "string", "focus": "string"} ],
+        "workout": { 
+           "schedule": [ { "id": "day1", "label": "string", "warmup": [ { "name": "string", "duration": "string"} ], "exercises": [ { "name": "string", "sets": 3, "reps": "8-12", "rest": "90s", "weight": "string", "guide": "string" } ], "cooldown": [{"name": "string", "duration": "string"}] } ]
+        },
+        "mindset": ["Rule 1", "Rule 2"]
+      }`;
+
+      const result = await model.generateContent(prompt);
+      let text = result.response.text();
+      // Safely trim markdown if returned
+      text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+      const generated = JSON.parse(text);
 
       if (user) {
         await setDoc(doc(db, 'users', user.uid), {
@@ -83,8 +100,7 @@ function App() {
       setView('dashboard');
       setActiveTab('plan');
     } catch (err) {
-      console.warn("Cloud AI Generation failed (likely missing Gemini API Key). Falling back to powerful local simulated AI.", err);
-      // Fallback
+      console.error("Firebase AI Logic failed. Ensure Vertex AI is enabled via Firebase Console.", err);
       setTimeout(() => {
         import('./utils/aiMock').then(async (module) => {
           const generated = module.generateAIGymPlan(formData);
@@ -97,7 +113,7 @@ function App() {
           setView('dashboard');
           setActiveTab('plan');
         });
-      }, 3500);
+      }, 2000);
     }
   };
 

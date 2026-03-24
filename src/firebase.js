@@ -3,7 +3,7 @@ import { getAnalytics } from "firebase/analytics";
 import { getAuth } from "firebase/auth";
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
-import { getVertexAI } from "firebase/vertexai";
+import { getAI } from "firebase/ai";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCj2aTfIS8nfEtSM2AY3OF0B2tVCvZjJh8",
@@ -27,4 +27,4 @@ export const db = initializeFirestore(app, {
 });
 
 export const storage = getStorage(app);
-export const vertexAI = getVertexAI(app);
+export const aiInstance = getAI(app);
