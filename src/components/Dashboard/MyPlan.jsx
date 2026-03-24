@@ -1,19 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { auth, db } from '../../firebase';
+import { auth, db, aiInstance } from '../../firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { getGenerativeModel } from 'firebase/ai';
 
 const MyPlan = ({ formData, aiPlan }) => {
   const [selectedWeek, setSelectedWeek] = useState(1);
   const [completedExercises, setCompletedExercises] = useState({});
+  const [swapping, setSwapping] = useState(null); // tracks which exercise is being swapped
+  const [localPlan, setLocalPlan] = useState(null);
+
+  useEffect(() => {
+    setLocalPlan(aiPlan);
+  }, [aiPlan]);
 
   // Load completed exercises from Firestore
   useEffect(() => {
     const load = async () => {
       const user = auth.currentUser;
       if (!user) return;
-      const snap = await getDoc(doc(db, 'users', user.uid));
-      if (snap.exists() && snap.data().completedExercises) {
-        setCompletedExercises(snap.data().completedExercises);
+      try {
+        const snap = await getDoc(doc(db, 'users', user.uid));
+        if (snap.exists() && snap.data().completedExercises) {
+          setCompletedExercises(snap.data().completedExercises);
+        }
+      } catch (e) {
+        console.warn("Could not load completed exercises:", e);
       }
     };
     load();
@@ -24,10 +35,13 @@ const MyPlan = ({ formData, aiPlan }) => {
     const updated = { ...completedExercises, [key]: !completedExercises[key] };
     setCompletedExercises(updated);
     
-    // Persist to Firestore
     const user = auth.currentUser;
     if (user) {
-      await updateDoc(doc(db, 'users', user.uid), { completedExercises: updated });
+      try {
+        await updateDoc(doc(db, 'users', user.uid), { completedExercises: updated });
+      } catch (e) {
+        console.warn("Could not save exercise state:", e);
+      }
     }
   };
 
@@ -45,11 +59,82 @@ const MyPlan = ({ formData, aiPlan }) => {
     }
   };
 
-  const handleSwap = (exName) => {
-    alert(`AI Swap analyzing: Finding alternative for [${exName}] targeting the exact same muscle group... \n(This will trigger the Gemini function upon deployment).`);
+  const handleSwap = async (dayIdx, exIdx, exName) => {
+    const swapKey = `${dayIdx}_${exIdx}`;
+    setSwapping(swapKey);
+
+    try {
+      const model = getGenerativeModel(aiInstance, {
+        model: "gemini-2.5-flash-lite",
+        generationConfig: { responseMimeType: "application/json" }
+      });
+
+      const prompt = `You are a certified personal trainer. The client wants to swap "${exName}" for an alternative exercise that targets the EXACT same muscle group(s).
+
+Client info: ${formData.fitnessLevel || 'beginner'} level, training in a ${formData.trainingEnv || 'full gym'}.
+${formData.injuryAreas && formData.injuryAreas.length > 0 ? `Avoid stressing: ${formData.injuryAreas.join(', ')}` : ''}
+
+Return ONLY this JSON (no markdown):
+{
+  "name": "Alternative Exercise Name",
+  "sets": 3,
+  "reps": "8-12",
+  "rest": "90s",
+  "weight": "Start: Xkg",
+  "guide": "Clear form instructions"
+}`;
+
+      const result = await model.generateContent(prompt);
+      let text = result.response.text();
+      text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+      const newExercise = JSON.parse(text);
+
+      // Replace exercise in local plan
+      const updatedPlan = JSON.parse(JSON.stringify(localPlan));
+      updatedPlan.workout.schedule[dayIdx].exercises[exIdx] = newExercise;
+      setLocalPlan(updatedPlan);
+
+      // Persist to Firestore
+      const user = auth.currentUser;
+      if (user) {
+        try {
+          await updateDoc(doc(db, 'users', user.uid), { aiPlan: updatedPlan });
+        } catch (e) {
+          console.warn("Could not persist swapped exercise:", e);
+        }
+      }
+    } catch (err) {
+      console.warn("AI Swap failed, using local fallback:", err);
+      // Local fallback swap
+      const alternatives = {
+        push: ["Dumbbell Floor Press", "Push-Up Variations", "Cable Chest Press", "Smith Machine Press"],
+        pull: ["Cable Pullover", "Machine Row", "Resistance Band Pull-Apart", "Inverted Row"],
+        legs: ["Step-Ups", "Wall Sit", "Split Squats", "Glute Bridge"],
+        default: ["Resistance Band Alternative", "Machine Equivalent", "Dumbbell Variation"]
+      };
+      const nameL = exName.toLowerCase();
+      const pool = nameL.includes('press') || nameL.includes('push') || nameL.includes('fly') ? alternatives.push
+        : nameL.includes('row') || nameL.includes('pull') || nameL.includes('curl') ? alternatives.pull
+        : nameL.includes('squat') || nameL.includes('lunge') || nameL.includes('leg') || nameL.includes('dead') ? alternatives.legs
+        : alternatives.default;
+      
+      const altName = pool[Math.floor(Math.random() * pool.length)];
+      const updatedPlan = JSON.parse(JSON.stringify(localPlan));
+      const oldEx = updatedPlan.workout.schedule[dayIdx].exercises[exIdx];
+      updatedPlan.workout.schedule[dayIdx].exercises[exIdx] = {
+        ...oldEx,
+        name: altName,
+        guide: `Alternative for ${exName}. Same muscle group, adjusted for your setup.`
+      };
+      setLocalPlan(updatedPlan);
+    } finally {
+      setSwapping(null);
+    }
   };
 
-  if (!aiPlan) {
+  const plan = localPlan;
+
+  if (!plan) {
     return (
       <div style={{ textAlign: 'center', padding: '60px 0' }}>
         <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🏋️</div>
@@ -77,7 +162,7 @@ const MyPlan = ({ formData, aiPlan }) => {
 
       {/* Phase Label */}
       <div style={{ margin: '20px 0 24px 0' }}>
-        {aiPlan.progression && aiPlan.progression.map((p, i) => {
+        {plan.progression && plan.progression.map((p, i) => {
           const isActive = (selectedWeek <= 4 && i === 0) || (selectedWeek >= 5 && selectedWeek <= 8 && i === 1) || (selectedWeek >= 9 && i === 2);
           return isActive ? (
             <div key={i} className="alert-box" style={{ background: 'rgba(0,229,255,0.1)', border: '1px solid var(--accent-cyan)', color: 'var(--accent-cyan)', width: '100%' }}>
@@ -88,8 +173,8 @@ const MyPlan = ({ formData, aiPlan }) => {
       </div>
 
       {/* Daily Schedule */}
-      {aiPlan.workout && aiPlan.workout.schedule.map((day, idx) => (
-        <div key={idx} className="section-card" style={{ borderTop: '4px solid var(--accent-cyan)', marginBottom: '24px' }}>
+      {plan.workout && plan.workout.schedule.map((day, dayIdx) => (
+        <div key={dayIdx} className="section-card" style={{ borderTop: '4px solid var(--accent-cyan)', marginBottom: '24px' }}>
           <div className="section-header">
             <h3 style={{ color: 'var(--accent-cyan)' }}>{day.label}</h3>
           </div>
@@ -116,23 +201,28 @@ const MyPlan = ({ formData, aiPlan }) => {
                 </tr>
               </thead>
               <tbody>
-                {day.exercises.map((ex, i) => {
-                  const key = `${day.id}_${i}`;
+                {day.exercises.map((ex, exIdx) => {
+                  const key = `${day.id}_${exIdx}`;
                   const isDone = completedExercises[key];
+                  const isSwapping = swapping === `${dayIdx}_${exIdx}`;
                   return (
-                    <tr key={i} style={{ opacity: isDone ? 0.5 : 1, textDecoration: isDone ? 'line-through' : 'none' }}>
+                    <tr key={exIdx} style={{ opacity: isDone ? 0.5 : 1, textDecoration: isDone ? 'line-through' : 'none' }}>
                       <td>
                         <input 
                           type="checkbox" 
                           className="exercise-checkbox"
                           checked={!!isDone}
-                          onChange={() => toggleExercise(day.id, i)}
+                          onChange={() => toggleExercise(day.id, exIdx)}
                         />
                       </td>
                       <td className="ex-name">
                         {ex.name}
-                        <button onClick={() => handleSwap(ex.name)} style={{ background: 'none', border: 'none', color: 'var(--text-dim)', fontSize: '0.7rem', cursor: 'pointer', display: 'block', marginTop: '4px', textDecoration: 'underline' }}>
-                           [Swap]
+                        {ex.guide && <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginTop: '2px' }}>{ex.guide}</div>}
+                        <button 
+                          onClick={() => handleSwap(dayIdx, exIdx, ex.name)} 
+                          disabled={isSwapping}
+                          style={{ background: 'none', border: 'none', color: isSwapping ? 'var(--accent-cyan)' : 'var(--text-dim)', fontSize: '0.7rem', cursor: isSwapping ? 'wait' : 'pointer', display: 'block', marginTop: '4px', textDecoration: 'underline' }}>
+                           {isSwapping ? '⏳ Swapping...' : '🔄 Swap'}
                         </button>
                       </td>
                       <td className="ex-sets">{ex.sets} × {ex.reps}</td>

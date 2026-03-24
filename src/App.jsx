@@ -70,7 +70,7 @@ function App() {
     setStep(4);
     try {
       const model = getGenerativeModel(aiInstance, { 
-        model: "gemini-2.0-flash",
+        model: "gemini-2.5-flash-lite",
         generationConfig: { responseMimeType: "application/json" }
       });
       

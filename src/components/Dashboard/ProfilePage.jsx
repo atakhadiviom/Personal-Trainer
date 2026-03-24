@@ -46,7 +46,7 @@ const ProfilePage = ({ formData, resetWizard }) => {
           {formData.weight && (
             <div style={{ marginTop: '32px' }}>
               <h4 style={{ marginBottom: '16px', color: 'var(--text-secondary)' }}>12-Week Weight Projection</h4>
-              <div style={{ height: '200px', width: '100%', background: 'rgba(0,0,0,0.2)', padding: '16px 8px 8px 0', borderRadius: 'var(--r-md)', border: '1px solid var(--border)' }}>
+              <div style={{ height: '200px', width: '100%', minWidth: '200px', minHeight: '200px', background: 'rgba(0,0,0,0.2)', padding: '16px 8px 8px 0', borderRadius: 'var(--r-md)', border: '1px solid var(--border)' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={
                     Array.from({length: 12}, (_, i) => ({ 
