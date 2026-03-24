@@ -34,6 +34,7 @@ function App() {
     watchConnected: false
   });
   const [aiPlan, setAiPlan] = useState(null);
+  const [aiError, setAiError] = useState(null);
 
   // Auth listener + load saved data
   useEffect(() => {
@@ -68,6 +69,7 @@ function App() {
 
   const generatePlan = async () => {
     setStep(4);
+    setAiError(null);
     try {
       const model = getGenerativeModel(aiInstance, { 
         model: "gemini-2.5-flash-lite",
@@ -138,20 +140,9 @@ Return EXACTLY this JSON format. No markdown, no backticks, pure JSON only:
       setView('dashboard');
       setActiveTab('plan');
     } catch (err) {
-      console.error("Firebase AI Logic failed. Ensure Vertex AI is enabled via Firebase Console.", err);
-      setTimeout(() => {
-        import('./utils/aiMock').then(async (module) => {
-          const generated = module.generateAIGymPlan(formData);
-          if (user) {
-            await setDoc(doc(db, 'users', user.uid), {
-              formData, aiPlan: generated, updatedAt: new Date().toISOString()
-            }, { merge: true });
-          }
-          setAiPlan(generated);
-          setView('dashboard');
-          setActiveTab('plan');
-        });
-      }, 2000);
+      console.error("Firebase AI Logic failed:", err);
+      setStep(0); // reset to show error
+      setAiError(err.message || "AI generation failed. Please try again.");
     }
   };
 
@@ -162,6 +153,20 @@ Return EXACTLY this JSON format. No markdown, no backticks, pure JSON only:
   };
 
   const renderWizardStep = () => {
+    if (step === 0 && aiError) {
+      return (
+        <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '16px' }}>⚠️</div>
+          <h2 className="step-title" style={{ color: '#ff6b6b' }}>AI Generation Failed</h2>
+          <p className="step-subtitle" style={{ marginBottom: '8px' }}>{aiError}</p>
+          <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem', marginBottom: '24px' }}>This usually means the Vertex AI quota was exceeded or the service is temporarily unavailable.</p>
+          <div className="btn-group" style={{ justifyContent: 'center', gap: '12px' }}>
+            <button className="btn-primary" onClick={generatePlan}>🔄 Retry Generation</button>
+            <button className="btn-secondary" onClick={() => { setStep(3); setAiError(null); }}>← Back to Wizard</button>
+          </div>
+        </div>
+      );
+    }
     switch (step) {
       case 1: return <StepBody formData={formData} updateFormData={updateFormData} nextStep={nextStep} />;
       case 2: return <StepProblems formData={formData} updateFormData={updateFormData} prevStep={prevStep} nextStep={nextStep} />;

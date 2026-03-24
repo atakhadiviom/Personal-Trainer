@@ -493,11 +493,93 @@ select option { background: #1c1916; }
 /* ─── RESPONSIVE ─── */
 @media (max-width: 640px) {
   .macro-grid { grid-template-columns: repeat(2, 1fr); }
-  .step-title, .super-title { font-size: 1.8rem; }
-  .wizard-card { padding: 24px; }
+  .step-title, .super-title { font-size: 1.6rem; }
+  .wizard-card { padding: 20px 16px; }
   .profile-stats-grid { grid-template-columns: repeat(2, 1fr); }
-  .section-header h3 { font-size: 0.95rem; }
+  .section-header h3 { font-size: 0.9rem; }
+  .container { padding: 0 12px; }
+  .app-shell { padding: 0 12px; }
 
-  /* Calorie form stacks */
-  form[style] { grid-template-columns: 1fr !important; }
+  /* Wizard form stacks */
+  form div[style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
+
+  /* Selection grid on mobile */
+  .selection-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .selection-card { padding: 14px 10px; }
+  .selection-card span { font-size: 0.85rem; }
+  .selection-icon { font-size: 1.4rem; }
+
+  /* Exercise table → mobile cards */
+  .exercise-table thead { display: none; }
+  .exercise-table,
+  .exercise-table tbody,
+  .exercise-table tr,
+  .exercise-table td {
+    display: block;
+    width: 100%;
+  }
+  .exercise-table tr {
+    background: rgba(0,0,0,0.15);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    padding: 14px;
+    margin-bottom: 12px;
+    opacity: 1 !important;
+    text-decoration: none !important;
+  }
+  .exercise-table td {
+    border-bottom: none;
+    padding: 3px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .exercise-table td:first-child {
+    position: absolute;
+    right: 14px;
+    top: 14px;
+    width: auto;
+  }
+  .exercise-table tr {
+    position: relative;
+  }
+  .exercise-table td.ex-name {
+    font-size: 1rem;
+    padding-bottom: 8px;
+    padding-right: 40px;
+  }
+  .exercise-table td.ex-sets::before { content: "Sets × Reps: "; color: var(--text-dim); font-size: 0.75rem; font-family: 'IBM Plex Mono', monospace; min-width: 90px; }
+  .exercise-table td.ex-rest::before { content: "Rest: "; color: var(--text-dim); font-size: 0.75rem; font-family: 'IBM Plex Mono', monospace; min-width: 90px; }
+  .exercise-table td.ex-weight::before { content: "Weight: "; color: var(--text-dim); font-size: 0.75rem; font-family: 'IBM Plex Mono', monospace; min-width: 90px; }
+  .exercise-table td:last-child { padding-top: 8px; }
+
+  /* Warmup/cooldown */
+  .phase { padding: 12px 14px; }
+  .phase li { font-size: 0.82rem; }
+
+  /* Week selector */
+  .week-btn { padding: 5px 8px; font-size: 0.7rem; }
+
+  /* Macro rings on mobile */
+  .macro-rings { padding: 16px 8px; gap: 8px; }
+  .macro-ring-card svg { width: 80px; height: 80px; }
+
+  /* Chat calorie tracker */
+  .dash-content { padding: 16px 0 90px 0; }
+
+  /* Alert box */
+  .alert-box { font-size: 0.82rem; padding: 12px; }
+
+  /* Buttons */
+  .btn-primary { padding: 12px 20px; font-size: 0.85rem; }
+  .btn-secondary { padding: 10px 18px; font-size: 0.85rem; }
+  .btn-yt { padding: 4px 10px; font-size: 0.72rem; }
+}
+
+@media (max-width: 380px) {
+  .step-title { font-size: 1.35rem; }
+  .selection-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .selection-card { padding: 10px 8px; }
+  .selection-card span { font-size: 0.78rem; }
+  .macro-ring-card svg { width: 70px; height: 70px; }
 }

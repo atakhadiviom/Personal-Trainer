@@ -183,7 +183,12 @@ Return ONLY this JSON (no markdown):
           <div className="phase warmup-phase">
             <h5>Warm-Up</h5>
             <ul>
-              {day.warmup.map((w, i) => <li key={i}><strong>{w.name}</strong> • {w.duration}</li>)}
+              {day.warmup.map((w, i) => (
+                <li key={i}>
+                  <strong>{w.name}</strong> • {w.duration}
+                  <a href={`https://www.youtube.com/results?search_query=how+to+${encodeURIComponent(w.name)}`} target="_blank" rel="noreferrer" style={{ marginLeft: '8px', color: 'var(--accent-cyan)', fontSize: '0.75rem', textDecoration: 'none' }}>▶ Watch</a>
+                </li>
+              ))}
             </ul>
           </div>
 
@@ -242,7 +247,12 @@ Return ONLY this JSON (no markdown):
           <div className="phase cooldown-phase">
             <h5>Cool-Down</h5>
             <ul>
-              {day.cooldown.map((c, i) => <li key={i}><strong>{c.name}</strong> • {c.duration}</li>)}
+              {day.cooldown.map((c, i) => (
+                <li key={i}>
+                  <strong>{c.name}</strong> • {c.duration}
+                  <a href={`https://www.youtube.com/results?search_query=how+to+${encodeURIComponent(c.name)}`} target="_blank" rel="noreferrer" style={{ marginLeft: '8px', color: 'var(--accent-cyan)', fontSize: '0.75rem', textDecoration: 'none' }}>▶ Watch</a>
+                </li>
+              ))}
             </ul>
           </div>
         </div>
