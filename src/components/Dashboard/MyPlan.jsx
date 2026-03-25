@@ -8,6 +8,7 @@ const MyPlan = ({ formData, aiPlan }) => {
   const [completedExercises, setCompletedExercises] = useState({});
   const [swapping, setSwapping] = useState(null); // tracks which exercise is being swapped
   const [localPlan, setLocalPlan] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     setLocalPlan(aiPlan);
@@ -24,7 +25,8 @@ const MyPlan = ({ formData, aiPlan }) => {
           setCompletedExercises(snap.data().completedExercises);
         }
       } catch (e) {
-        console.warn("Could not load completed exercises:", e);
+        console.error("Could not load completed exercises:", e);
+        setError("Failed to load completed exercises. Please try again.");
       }
     };
     load();
@@ -40,7 +42,8 @@ const MyPlan = ({ formData, aiPlan }) => {
       try {
         await updateDoc(doc(db, 'users', user.uid), { completedExercises: updated });
       } catch (e) {
-        console.warn("Could not save exercise state:", e);
+        console.error("Could not save exercise state:", e);
+        setError("Failed to save exercise state. Please try again.");
       }
     }
   };
@@ -51,7 +54,8 @@ const MyPlan = ({ formData, aiPlan }) => {
       try {
         await navigator.share({ title: 'NovaFit AI', text, url: window.location.href });
       } catch (e) {
-         console.warn("Share failed", e);
+         console.error("Share failed", e);
+         setError("Failed to share your transformation status.");
       }
     } else {
       navigator.clipboard.writeText(text);
@@ -100,11 +104,13 @@ Return ONLY this JSON (no markdown):
         try {
           await updateDoc(doc(db, 'users', user.uid), { aiPlan: updatedPlan });
         } catch (e) {
-          console.warn("Could not persist swapped exercise:", e);
+          console.error("Could not persist swapped exercise:", e);
+          setError("Failed to save the swapped exercise.");
         }
       }
     } catch (err) {
-      console.warn("AI Swap failed, using local fallback:", err);
+      console.error("AI Swap failed, using local fallback:", err);
+      setError("AI Swap failed. Using a local fallback exercise instead.");
       // Local fallback swap
       const alternatives = {
         push: ["Dumbbell Floor Press", "Push-Up Variations", "Cable Chest Press", "Smith Machine Press"],
@@ -146,6 +152,13 @@ Return ONLY this JSON (no markdown):
 
   return (
     <div className="animate-fade-in">
+      {error && (
+        <div className="alert-box" style={{ background: 'rgba(255, 107, 107, 0.1)', border: '1px solid #ff6b6b', color: '#ff6b6b', margin: '0 0 16px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>{error}</span>
+          <button onClick={() => setError(null)} style={{ background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', fontSize: '1.2rem', padding: '0 4px' }}>&times;</button>
+        </div>
+      )}
+
       {/* Week Selector & Social Share */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
         <div className="week-selector" style={{ flex: 1, paddingBottom: '0' }}>
