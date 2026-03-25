@@ -127,7 +127,6 @@ Return EXACTLY this JSON format. No markdown, no backticks, pure JSON only:
 
       const result = await model.generateContent(prompt);
       let text = result.response.text();
-      // Safely trim markdown if returned
       text = text.replace(/```json/g, '').replace(/```/g, '').trim();
       const generated = JSON.parse(text);
 
