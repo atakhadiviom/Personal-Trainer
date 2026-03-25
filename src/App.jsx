@@ -1,10 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import './index.css';
 
-import { auth, db, aiInstance } from './firebase';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { getGenerativeModel } from 'firebase/ai';
+import { auth, db, aiInstance, onAuthStateChanged, signOut, doc, getDoc, setDoc, getGenerativeModel } from './firebase';
 
 import Login from './components/Auth/Login';
 import StepBody from './components/Wizard/StepBody';

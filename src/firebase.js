@@ -1,9 +1,11 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { getAuth } from "firebase/auth";
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
+import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, getDoc, setDoc } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
-import { getAI } from "firebase/ai";
+import { getAI, getGenerativeModel } from "firebase/ai";
+
+export { onAuthStateChanged, signOut, doc, getDoc, setDoc, getGenerativeModel };
 
 const firebaseConfig = {
   apiKey: "AIzaSyCj2aTfIS8nfEtSM2AY3OF0B2tVCvZjJh8",
