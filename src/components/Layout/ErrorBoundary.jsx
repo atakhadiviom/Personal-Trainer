@@ -6,16 +6,13 @@ class ErrorBoundary extends React.Component {
     this.state = { hasError: false, errorInfo: null };
   }
 
-  static getDerivedStateFromError(error) {
+  static getDerivedStateFromError() {
     // Update state so the next render will show the fallback UI.
     return { hasError: true };
   }
 
   componentDidCatch(error, errorInfo) {
-    // 1. Log to console
     console.error("ErrorBoundary caught an error:", error, errorInfo);
-    
-    // 2. Here we could manually log to an external service like Firebase Crashlytics if available
     this.setState({ errorInfo });
   }
 
