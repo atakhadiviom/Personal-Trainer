@@ -7,7 +7,9 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signInWithPopup,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  getRedirectResult,
+  signInWithRedirect
 } from 'firebase/auth';
 
 // Mock the firebase configuration
@@ -21,7 +23,9 @@ vi.mock('firebase/auth', () => ({
   createUserWithEmailAndPassword: vi.fn(),
   signInWithPopup: vi.fn(),
   sendPasswordResetEmail: vi.fn(),
-  GoogleAuthProvider: vi.fn()
+  GoogleAuthProvider: vi.fn(),
+  getRedirectResult: vi.fn(() => Promise.resolve(null)),
+  signInWithRedirect: vi.fn()
 }));
 
 describe('Login Component', () => {

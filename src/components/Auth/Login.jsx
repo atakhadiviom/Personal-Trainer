@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { auth } from '../../firebase';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   GoogleAuthProvider, 
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   sendPasswordResetEmail 
 } from 'firebase/auth';
 
@@ -15,6 +17,14 @@ const Login = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    getRedirectResult(auth).catch((err) => {
+      if (err.message) {
+        setError(err.message.replace('Firebase: ', '').replace(/\(auth\/.*\)/, ''));
+      }
+    });
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -45,7 +55,16 @@ const Login = () => {
     setError('');
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+
+      const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+      const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;
+      const isWebView = /(iPhone|iPod|iPad).*AppleWebKit(?!.*Safari)|Telegram|Instagram|FBAN|FBAV/i.test(userAgent);
+
+      if (isIOS || isWebView) {
+        await signInWithRedirect(auth, provider);
+      } else {
+        await signInWithPopup(auth, provider);
+      }
     } catch (err) {
       setError(err.message.replace('Firebase: ', '').replace(/\(auth\/.*\)/, ''));
     }
