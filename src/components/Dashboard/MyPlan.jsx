@@ -8,6 +8,14 @@ const MyPlan = ({ formData, aiPlan }) => {
   const [completedExercises, setCompletedExercises] = useState({});
   const [swapping, setSwapping] = useState(null); // tracks which exercise is being swapped
   const [localPlan, setLocalPlan] = useState(null);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
   useEffect(() => {
     setLocalPlan(aiPlan);
@@ -23,8 +31,8 @@ const MyPlan = ({ formData, aiPlan }) => {
         if (snap.exists() && snap.data().completedExercises) {
           setCompletedExercises(snap.data().completedExercises);
         }
-      } catch (e) {
-        console.warn("Could not load completed exercises:", e);
+      } catch {
+        setError("Could not load completed exercises. Please check your connection.");
       }
     };
     load();
@@ -39,8 +47,8 @@ const MyPlan = ({ formData, aiPlan }) => {
     if (user) {
       try {
         await updateDoc(doc(db, 'users', user.uid), { completedExercises: updated });
-      } catch (e) {
-        console.warn("Could not save exercise state:", e);
+      } catch {
+        setError("Could not save exercise state. Changes may not be synced.");
       }
     }
   };
@@ -50,8 +58,8 @@ const MyPlan = ({ formData, aiPlan }) => {
     if (navigator.share) {
       try {
         await navigator.share({ title: 'NovaFit AI', text, url: window.location.href });
-      } catch (e) {
-         console.warn("Share failed", e);
+      } catch {
+         setError("Share failed. Please try again.");
       }
     } else {
       navigator.clipboard.writeText(text);
@@ -99,12 +107,12 @@ Return ONLY this JSON (no markdown):
       if (user) {
         try {
           await updateDoc(doc(db, 'users', user.uid), { aiPlan: updatedPlan });
-        } catch (e) {
-          console.warn("Could not persist swapped exercise:", e);
+        } catch {
+          setError("Could not persist swapped exercise to the cloud.");
         }
       }
-    } catch (err) {
-      console.warn("AI Swap failed, using local fallback:", err);
+    } catch {
+      setError("AI Swap failed, using local fallback.");
       // Local fallback swap
       const alternatives = {
         push: ["Dumbbell Floor Press", "Push-Up Variations", "Cable Chest Press", "Smith Machine Press"],
@@ -146,6 +154,12 @@ Return ONLY this JSON (no markdown):
 
   return (
     <div className="animate-fade-in">
+      {error && (
+        <div className="alert-box alert-warning" style={{ marginBottom: '16px' }}>
+          {error}
+        </div>
+      )}
+
       {/* Week Selector & Social Share */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
         <div className="week-selector" style={{ flex: 1, paddingBottom: '0' }}>
