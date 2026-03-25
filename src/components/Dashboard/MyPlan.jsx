@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { auth, db, aiInstance } from '../../firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { getGenerativeModel } from 'firebase/ai';
@@ -8,6 +8,14 @@ const MyPlan = ({ formData, aiPlan }) => {
   const [completedExercises, setCompletedExercises] = useState({});
   const [swapping, setSwapping] = useState(null); // tracks which exercise is being swapped
   const [localPlan, setLocalPlan] = useState(null);
+  const syncTimeoutRef = useRef(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     setLocalPlan(aiPlan);
@@ -32,17 +40,26 @@ const MyPlan = ({ formData, aiPlan }) => {
 
   const toggleExercise = async (dayId, exIndex) => {
     const key = `${dayId}_${exIndex}`;
+
+    // Create the updated state based on the current completedExercises
     const updated = { ...completedExercises, [key]: !completedExercises[key] };
     setCompletedExercises(updated);
     
-    const user = auth.currentUser;
-    if (user) {
-      try {
-        await updateDoc(doc(db, 'users', user.uid), { completedExercises: updated });
-      } catch (e) {
-        console.warn("Could not save exercise state:", e);
+    // Debounce the network request
+    if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+
+    syncTimeoutRef.current = setTimeout(async () => {
+      const user = auth.currentUser;
+      if (user) {
+        try {
+          // Use the captured 'updated' state which contains the latest value
+          // from when the timeout was scheduled
+          await updateDoc(doc(db, 'users', user.uid), { completedExercises: updated });
+        } catch (e) {
+          console.warn("Could not save exercise state:", e);
+        }
       }
-    }
+    }, 500);
   };
 
   const handleShare = async () => {
