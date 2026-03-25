@@ -8,6 +8,7 @@ const MyPlan = ({ formData, aiPlan }) => {
   const [completedExercises, setCompletedExercises] = useState({});
   const [swapping, setSwapping] = useState(null); // tracks which exercise is being swapped
   const [localPlan, setLocalPlan] = useState(null);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     setLocalPlan(aiPlan);
@@ -24,13 +25,15 @@ const MyPlan = ({ formData, aiPlan }) => {
           setCompletedExercises(snap.data().completedExercises);
         }
       } catch (e) {
-        console.warn("Could not load completed exercises:", e);
+        console.error("Could not load completed exercises:", e);
+        setError("Could not load completed exercises.");
       }
     };
     load();
   }, []);
 
   const toggleExercise = async (dayId, exIndex) => {
+    setError('');
     const key = `${dayId}_${exIndex}`;
     const updated = { ...completedExercises, [key]: !completedExercises[key] };
     setCompletedExercises(updated);
@@ -40,18 +43,21 @@ const MyPlan = ({ formData, aiPlan }) => {
       try {
         await updateDoc(doc(db, 'users', user.uid), { completedExercises: updated });
       } catch (e) {
-        console.warn("Could not save exercise state:", e);
+        console.error("Could not save exercise state:", e);
+        setError("Could not save exercise state.");
       }
     }
   };
 
   const handleShare = async () => {
+    setError('');
     const text = `I'm on Week ${selectedWeek} of my 12-week AI Gym Transformation with NovaFit 🔥`;
     if (navigator.share) {
       try {
         await navigator.share({ title: 'NovaFit AI', text, url: window.location.href });
       } catch (e) {
-         console.warn("Share failed", e);
+         console.error("Share failed", e);
+         setError("Share failed. Please try again.");
       }
     } else {
       navigator.clipboard.writeText(text);
@@ -60,6 +66,7 @@ const MyPlan = ({ formData, aiPlan }) => {
   };
 
   const handleSwap = async (dayIdx, exIdx, exName) => {
+    setError('');
     const swapKey = `${dayIdx}_${exIdx}`;
     setSwapping(swapKey);
 
@@ -100,11 +107,13 @@ Return ONLY this JSON (no markdown):
         try {
           await updateDoc(doc(db, 'users', user.uid), { aiPlan: updatedPlan });
         } catch (e) {
-          console.warn("Could not persist swapped exercise:", e);
+          console.error("Could not persist swapped exercise:", e);
+          setError("Could not persist swapped exercise.");
         }
       }
     } catch (err) {
-      console.warn("AI Swap failed, using local fallback:", err);
+      console.error("AI Swap failed, using local fallback:", err);
+      setError("AI Swap failed, using local fallback.");
       // Local fallback swap
       const alternatives = {
         push: ["Dumbbell Floor Press", "Push-Up Variations", "Cable Chest Press", "Smith Machine Press"],
@@ -146,6 +155,12 @@ Return ONLY this JSON (no markdown):
 
   return (
     <div className="animate-fade-in">
+      {error && (
+        <div className="alert-box alert-warning" style={{ marginBottom: '16px' }}>
+          {error}
+        </div>
+      )}
+
       {/* Week Selector & Social Share */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
         <div className="week-selector" style={{ flex: 1, paddingBottom: '0' }}>
