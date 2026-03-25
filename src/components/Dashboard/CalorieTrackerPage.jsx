@@ -18,6 +18,7 @@ const CalorieTrackerPage = ({ formData }) => {
   const [entries, setEntries] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const chatEndRef = useRef(null);
 
   useEffect(() => {
@@ -33,6 +34,7 @@ const CalorieTrackerPage = ({ formData }) => {
         }
       } catch (e) {
         console.warn("Could not load calorie log:", e);
+        setError("Could not load calorie log.");
       }
     };
     load();
@@ -53,6 +55,7 @@ const CalorieTrackerPage = ({ formData }) => {
 
     const userMsg = input.trim();
     setInput('');
+    setError(null);
     setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
     setLoading(true);
 
@@ -119,10 +122,12 @@ Be accurate. Use standard serving sizes if the user doesn't specify amounts. All
           }, { merge: true });
         } catch (err) {
           console.warn("Could not save calorie entry:", err);
+          setError("Could not save calorie entry.");
         }
       }
     } catch (err) {
       console.error("AI calorie analysis failed:", err);
+      setError("AI calorie analysis failed.");
       setMessages(prev => [...prev, { role: 'ai', text: "⚠️ Couldn't analyze that right now. Try again in a moment — the AI might be rate-limited." }]);
     } finally {
       setLoading(false);
@@ -141,6 +146,12 @@ Be accurate. Use standard serving sizes if the user doesn't specify amounts. All
           <MacroRing label="Fat" current={totalFat} target={targetFat} color="var(--accent-purple)" unit="g" />
         </div>
       </div>
+
+      {error && (
+        <div className="alert-box alert-warning" style={{ margin: '16px 0 0 0' }}>
+          {error}
+        </div>
+      )}
 
       {/* Chat Area */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px 0', display: 'flex', flexDirection: 'column', gap: '12px' }}>
