@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { auth, db, aiInstance } from '../../firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { getGenerativeModel } from 'firebase/ai';
@@ -30,20 +30,35 @@ const MyPlan = ({ formData, aiPlan }) => {
     load();
   }, []);
 
-  const toggleExercise = async (dayId, exIndex) => {
+  const isDirtyRef = useRef(false);
+
+  const toggleExercise = (dayId, exIndex) => {
     const key = `${dayId}_${exIndex}`;
-    const updated = { ...completedExercises, [key]: !completedExercises[key] };
-    setCompletedExercises(updated);
     
-    const user = auth.currentUser;
-    if (user) {
-      try {
-        await updateDoc(doc(db, 'users', user.uid), { completedExercises: updated });
-      } catch (e) {
-        console.warn("Could not save exercise state:", e);
-      }
-    }
+    setCompletedExercises(prev => {
+      const updated = { ...prev, [key]: !prev[key] };
+      isDirtyRef.current = true;
+      return updated;
+    });
   };
+
+  useEffect(() => {
+    if (!isDirtyRef.current) return;
+
+    const saveTimeout = setTimeout(async () => {
+      const user = auth.currentUser;
+      if (user) {
+        try {
+          await updateDoc(doc(db, 'users', user.uid), { completedExercises });
+          isDirtyRef.current = false;
+        } catch (e) {
+          console.warn("Could not save exercise state:", e);
+        }
+      }
+    }, 1000);
+
+    return () => clearTimeout(saveTimeout);
+  }, [completedExercises]);
 
   const handleShare = async () => {
     const text = `I'm on Week ${selectedWeek} of my 12-week AI Gym Transformation with NovaFit 🔥`;
