@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { auth, db, aiInstance } from '../../firebase';
+import ExerciseRow from './ExerciseRow';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { getGenerativeModel } from 'firebase/ai';
 
@@ -211,32 +212,17 @@ Return ONLY this JSON (no markdown):
                   const isDone = completedExercises[key];
                   const isSwapping = swapping === `${dayIdx}_${exIdx}`;
                   return (
-                    <tr key={exIdx} style={{ opacity: isDone ? 0.5 : 1, textDecoration: isDone ? 'line-through' : 'none' }}>
-                      <td>
-                        <input 
-                          type="checkbox" 
-                          className="exercise-checkbox"
-                          checked={!!isDone}
-                          onChange={() => toggleExercise(day.id, exIdx)}
-                        />
-                      </td>
-                      <td className="ex-name">
-                        {ex.name}
-                        {ex.guide && <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginTop: '2px' }}>{ex.guide}</div>}
-                        <button 
-                          onClick={() => handleSwap(dayIdx, exIdx, ex.name)} 
-                          disabled={isSwapping}
-                          style={{ background: 'none', border: 'none', color: isSwapping ? 'var(--accent-cyan)' : 'var(--text-dim)', fontSize: '0.7rem', cursor: isSwapping ? 'wait' : 'pointer', display: 'block', marginTop: '4px', textDecoration: 'underline' }}>
-                           {isSwapping ? '⏳ Swapping...' : '🔄 Swap'}
-                        </button>
-                      </td>
-                      <td className="ex-sets">{ex.sets} × {ex.reps}</td>
-                      <td className="ex-rest">{ex.rest}</td>
-                      <td className="ex-weight">{ex.weight}</td>
-                      <td>
-                        <a href={`https://www.youtube.com/results?search_query=how+to+${encodeURIComponent(ex.name)}`} target="_blank" rel="noreferrer" className="btn-yt">▶ Watch</a>
-                      </td>
-                    </tr>
+                    <ExerciseRow
+                      key={exIdx}
+                      ex={ex}
+                      exIdx={exIdx}
+                      dayIdx={dayIdx}
+                      dayId={day.id}
+                      isDone={isDone}
+                      isSwapping={isSwapping}
+                      toggleExercise={toggleExercise}
+                      handleSwap={handleSwap}
+                    />
                   );
                 })}
               </tbody>
