@@ -8,6 +8,14 @@ const MyPlan = ({ formData, aiPlan }) => {
   const [completedExercises, setCompletedExercises] = useState({});
   const [swapping, setSwapping] = useState(null); // tracks which exercise is being swapped
   const [localPlan, setLocalPlan] = useState(null);
+  const [error, setError] = useState('');
+  const errorTimeoutRef = useRef(null);
+
+  const displayError = (msg) => {
+    setError(msg);
+    if (errorTimeoutRef.current) clearTimeout(errorTimeoutRef.current);
+    errorTimeoutRef.current = setTimeout(() => setError(''), 5000);
+  };
 
   useEffect(() => {
     setLocalPlan(aiPlan);
@@ -24,7 +32,8 @@ const MyPlan = ({ formData, aiPlan }) => {
           setCompletedExercises(snap.data().completedExercises);
         }
       } catch (e) {
-        console.warn("Could not load completed exercises:", e);
+        console.error("Could not load completed exercises:", e);
+        displayError("Could not load completed exercises.");
       }
     };
     load();
@@ -66,7 +75,8 @@ const MyPlan = ({ formData, aiPlan }) => {
       try {
         await navigator.share({ title: 'NovaFit AI', text, url: window.location.href });
       } catch (e) {
-         console.warn("Share failed", e);
+        console.error("Share failed", e);
+        displayError("Could not share plan.");
       }
     } else {
       navigator.clipboard.writeText(text);
@@ -115,11 +125,13 @@ Return ONLY this JSON (no markdown):
         try {
           await updateDoc(doc(db, 'users', user.uid), { aiPlan: updatedPlan });
         } catch (e) {
-          console.warn("Could not persist swapped exercise:", e);
+          console.error("Could not persist swapped exercise:", e);
+          displayError("Could not persist swapped exercise.");
         }
       }
     } catch (err) {
-      console.warn("AI Swap failed, using local fallback:", err);
+      console.error("AI Swap failed, using local fallback:", err);
+      displayError("AI Swap failed, using local fallback.");
       // Local fallback swap
       const alternatives = {
         push: ["Dumbbell Floor Press", "Push-Up Variations", "Cable Chest Press", "Smith Machine Press"],
@@ -161,6 +173,12 @@ Return ONLY this JSON (no markdown):
 
   return (
     <div className="animate-fade-in">
+      {error && (
+        <div className="alert-box alert-warning" style={{ marginBottom: '16px' }}>
+          {error}
+        </div>
+      )}
+
       {/* Week Selector & Social Share */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
         <div className="week-selector" style={{ flex: 1, paddingBottom: '0' }}>
