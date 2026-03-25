@@ -214,14 +214,18 @@ Return ONLY this JSON (no markdown):
                     <tr key={exIdx} style={{ opacity: isDone ? 0.5 : 1, textDecoration: isDone ? 'line-through' : 'none' }}>
                       <td>
                         <input 
+                          id={`exercise-${dayIdx}-${exIdx}`}
                           type="checkbox" 
                           className="exercise-checkbox"
                           checked={!!isDone}
                           onChange={() => toggleExercise(day.id, exIdx)}
+                          aria-label={`Mark ${ex.name} as complete`}
                         />
                       </td>
                       <td className="ex-name">
-                        {ex.name}
+                        <label htmlFor={`exercise-${dayIdx}-${exIdx}`} style={{ cursor: 'pointer', display: 'block' }}>
+                          {ex.name}
+                        </label>
                         {ex.guide && <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginTop: '2px' }}>{ex.guide}</div>}
                         <button 
                           onClick={() => handleSwap(dayIdx, exIdx, ex.name)} 
