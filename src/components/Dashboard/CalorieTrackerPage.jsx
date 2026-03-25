@@ -92,7 +92,6 @@ Be accurate. Use standard serving sizes if the user doesn't specify amounts. All
       text = text.replace(/```json/g, '').replace(/```/g, '').trim();
       const parsed = JSON.parse(text);
 
-      // Build AI response message
       let responseText = '';
       if (parsed.items && parsed.items.length > 0) {
         parsed.items.forEach(item => {
@@ -105,7 +104,6 @@ Be accurate. Use standard serving sizes if the user doesn't specify amounts. All
 
       setMessages(prev => [...prev, { role: 'ai', text: responseText }]);
 
-      // Add to daily entries
       const newEntries = parsed.items.map(item => ({
         meal: item.food,
         cals: item.cals,
@@ -116,7 +114,6 @@ Be accurate. Use standard serving sizes if the user doesn't specify amounts. All
       const updatedEntries = [...entries, ...newEntries];
       setEntries(updatedEntries);
 
-      // Persist
       const user = auth.currentUser;
       if (user) {
         try {
@@ -138,6 +135,22 @@ Be accurate. Use standard serving sizes if the user doesn't specify amounts. All
     }
   };
 
+  const handleDeleteEntry = async (index) => {
+    const user = auth.currentUser;
+    if (!user) {
+      setError("Not authenticated. Please log in to delete entries.");
+      return;
+    }
+    try {
+      const updatedEntries = entries.filter((_, i) => i !== index);
+      setEntries(updatedEntries);
+      await setDoc(doc(db, 'users', user.uid, 'calorieLog', today), { entries: updatedEntries }, { merge: true });
+    } catch (err) {
+      console.error("Error deleting calorie entry:", err);
+      setError("Could not delete entry.");
+    }
+  };
+
   return (
     <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 140px)' }}>
       {/* Macro Rings */}
@@ -150,6 +163,57 @@ Be accurate. Use standard serving sizes if the user doesn't specify amounts. All
           <MacroRing label="Fat" current={totalFat} target={targetFat} color="var(--accent-purple)" unit="g" />
         </div>
       </div>
+
+      {/* Today's Log */}
+      {entries.length > 0 && (
+        <div style={{
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid var(--border-card)',
+          borderRadius: '8px',
+          padding: '8px 12px',
+          margin: '12px 0',
+          flexShrink: 0
+        }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
+            Today's Log
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {entries.map((entry, index) => (
+              <div key={index} style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                fontSize: '0.85rem'
+              }}>
+                <span style={{ fontWeight: '600', color: 'var(--text-primary)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {entry.meal}
+                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, marginLeft: '8px' }}>
+                  <span style={{ color: 'var(--text-dim)', fontSize: '0.8rem' }}>
+                    {entry.cals || 0} kcal • P:{entry.pro || 0}g C:{entry.carbs || 0}g F:{entry.fat || 0}g
+                  </span>
+                  <button
+                    onClick={() => handleDeleteEntry(index)}
+                    aria-label={`Delete ${entry.meal}`}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#ff6b6b',
+                      cursor: 'pointer',
+                      fontSize: '1rem',
+                      padding: '0 2px',
+                      lineHeight: '1',
+                      flexShrink: 0
+                    }}
+                  >
+                    🗑️
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Chat Area */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px 0', display: 'flex', flexDirection: 'column', gap: '12px' }}>
