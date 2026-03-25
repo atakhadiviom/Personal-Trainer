@@ -6,13 +6,13 @@ import { getStorage } from "firebase/storage";
 import { getAI } from "firebase/ai";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCj2aTfIS8nfEtSM2AY3OF0B2tVCvZjJh8",
-  authDomain: "novafit-ai-5be0c.firebaseapp.com",
-  projectId: "novafit-ai-5be0c",
-  storageBucket: "novafit-ai-5be0c.firebasestorage.app",
-  messagingSenderId: "512328032494",
-  appId: "1:512328032494:web:6f9d60d76b8ad3b4ebd3ff",
-  measurementId: "G-LC4BNZ69SK"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase
