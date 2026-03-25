@@ -58,4 +58,57 @@ describe('AI Mock Engine (generateAIGymPlan)', () => {
     // Usually AI Mock might inject something generic, let's just make sure it returns an array of valid strings
     expect(flattenedExercises.length).toBeGreaterThan(10);
   });
+
+  describe('Edge Cases and Branches', () => {
+    it('calculates different BMR for female gender', () => {
+      const malePlan = generateAIGymPlan({ ...mockFormData, gender: 'male' });
+      const femalePlan = generateAIGymPlan({ ...mockFormData, gender: 'female' });
+
+      expect(femalePlan.nutrition.macros.calories).toBeLessThan(malePlan.nutrition.macros.calories);
+    });
+
+    it('adjusts calories and protein for muscle goal', () => {
+      const fatlossPlan = generateAIGymPlan({ ...mockFormData, goal: 'fatloss' });
+      const musclePlan = generateAIGymPlan({ ...mockFormData, goal: 'muscle' });
+
+      expect(musclePlan.nutrition.macros.calories).toBeGreaterThan(fatlossPlan.nutrition.macros.calories);
+
+      const fatlossProtein = parseInt(fatlossPlan.nutrition.macros.protein);
+      const muscleProtein = parseInt(musclePlan.nutrition.macros.protein);
+      expect(muscleProtein).toBeGreaterThan(fatlossProtein);
+    });
+
+    it('uses home_basic exercise pool for home environment', () => {
+      const plan = generateAIGymPlan({ ...mockFormData, trainingEnv: 'home_basic' });
+      const flattenedExercises = plan.workout.schedule.flatMap(day => day.exercises.map(ex => ex.name.toLowerCase()));
+
+      // Home basic exercises from aiMock.js
+      const homeExercises = ['push-ups', 'bodyweight squats', 'plank', 'lunges', 'burpees', 'mountain climbers', 'glute bridges', 'tricep dips (chair)'];
+
+      const hasHomeExercise = flattenedExercises.some(ex => homeExercises.includes(ex));
+      expect(hasHomeExercise).toBe(true);
+    });
+
+    it('adjusts progression and mindset for low sleep', () => {
+      const plan = generateAIGymPlan({ ...mockFormData, sleepHours: 'less5' });
+
+      const peakPhase = plan.progression.find(p => p.phase.includes('Peak Phase'));
+      expect(peakPhase.focus.toLowerCase()).toContain('sleep');
+
+      const mindset = plan.mindset.join(' ').toLowerCase();
+      expect(mindset).toContain('sleep is below optimal');
+    });
+
+    it('schedules fewer exercises for short session lengths', () => {
+      const shortPlan = generateAIGymPlan({ ...mockFormData, sessionLength: '30' });
+      const longPlan = generateAIGymPlan({ ...mockFormData, sessionLength: '90' });
+
+      const shortExercisesCount = shortPlan.workout.schedule[0].exercises.length;
+      const longExercisesCount = longPlan.workout.schedule[0].exercises.length;
+
+      expect(shortExercisesCount).toBeLessThan(longExercisesCount);
+      expect(shortExercisesCount).toBe(3);
+      expect(longExercisesCount).toBe(6);
+    });
+  });
 });
