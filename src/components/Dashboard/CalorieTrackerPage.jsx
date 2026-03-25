@@ -42,10 +42,14 @@ const CalorieTrackerPage = ({ formData }) => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const totalCals = entries.reduce((s, e) => s + (e.cals || 0), 0);
-  const totalPro = entries.reduce((s, e) => s + (e.pro || 0), 0);
-  const totalCarbs = entries.reduce((s, e) => s + (e.carbs || 0), 0);
-  const totalFat = entries.reduce((s, e) => s + (e.fat || 0), 0);
+  let totalCals = 0, totalPro = 0, totalCarbs = 0, totalFat = 0;
+  for (let i = 0; i < entries.length; i++) {
+    const e = entries[i];
+    totalCals += (e.cals || 0);
+    totalPro += (e.pro || 0);
+    totalCarbs += (e.carbs || 0);
+    totalFat += (e.fat || 0);
+  }
 
   const handleSend = async (e) => {
     e.preventDefault();
