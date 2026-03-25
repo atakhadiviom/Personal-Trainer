@@ -3,7 +3,6 @@ import React from 'react';
 const Navbar = ({ activeTab, setActiveTab }) => {
   const tabs = [
     { id: 'plan', icon: '📋', label: 'My Plan' },
-    { id: 'calories', icon: '🔥', label: 'Nutrition' },
     { id: 'profile', icon: '👤', label: 'Profile' }
   ];
 

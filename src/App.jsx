@@ -15,7 +15,6 @@ import LoadingAI from './components/Wizard/LoadingAI';
 
 import Navbar from './components/Layout/Navbar';
 import MyPlan from './components/Dashboard/MyPlan';
-import CalorieTrackerPage from './components/Dashboard/CalorieTrackerPage';
 import ProfilePage from './components/Dashboard/ProfilePage';
 
 function App() {
@@ -122,7 +121,6 @@ function App() {
   const renderDashboardTab = () => {
     switch (activeTab) {
       case 'plan': return <MyPlan formData={formData} aiPlan={aiPlan} />;
-      case 'calories': return <CalorieTrackerPage formData={formData} />;
       case 'profile': return <ProfilePage formData={formData} resetWizard={resetWizard} />;
       default: return <MyPlan formData={formData} aiPlan={aiPlan} />;
     }
