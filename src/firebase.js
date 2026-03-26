@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { initializeAuth, browserLocalPersistence } from "firebase/auth";
+import { initializeAuth, browserLocalPersistence, browserPopupRedirectResolver } from "firebase/auth";
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getAI } from "firebase/ai";
@@ -22,7 +22,8 @@ export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : nul
 // Use browserLocalPersistence to avoid sessionStorage failures in
 // storage-partitioned WebViews (Telegram, Instagram, etc.)
 export const auth = initializeAuth(app, {
-  persistence: browserLocalPersistence
+  persistence: browserLocalPersistence,
+  popupRedirectResolver: browserPopupRedirectResolver
 });
 
 // Modern Firestore init with built-in offline persistence (replaces deprecated enableIndexedDbPersistence)
