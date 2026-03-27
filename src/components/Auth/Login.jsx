@@ -5,7 +5,6 @@ import {
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
   signInWithPopup,
-  signInWithRedirect,
   sendPasswordResetEmail
 } from 'firebase/auth';
 
@@ -57,12 +56,7 @@ const Login = () => {
     setError('');
     try {
       const provider = new GoogleAuthProvider();
-      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-      if (isMobile) {
-        await signInWithRedirect(auth, provider);
-      } else {
-        await signInWithPopup(auth, provider);
-      }
+      await signInWithPopup(auth, provider);
     } catch (err) {
       setError(err.message.replace('Firebase: ', '').replace(/\(auth\/.*\)/, ''));
     }

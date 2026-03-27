@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './index.css';
 
 import { auth, db } from './firebase';
-import { onAuthStateChanged, signOut, getRedirectResult } from 'firebase/auth';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 import { generateWorkoutPlan } from './utils/aiService';
@@ -39,9 +39,6 @@ function App() {
 
   // Auth listener + load saved data
   useEffect(() => {
-    // Handle Google redirect result on mobile after signInWithRedirect
-    getRedirectResult(auth).catch(() => {});
-
     const unsub = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
