@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { auth } from '../../firebase';
-import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  GoogleAuthProvider, 
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  GoogleAuthProvider,
   signInWithPopup,
-  sendPasswordResetEmail 
+  signInWithRedirect,
+  sendPasswordResetEmail
 } from 'firebase/auth';
 
 const isRestrictedWebView = () => {
@@ -56,7 +57,12 @@ const Login = () => {
     setError('');
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (isMobile) {
+        await signInWithRedirect(auth, provider);
+      } else {
+        await signInWithPopup(auth, provider);
+      }
     } catch (err) {
       setError(err.message.replace('Firebase: ', '').replace(/\(auth\/.*\)/, ''));
     }

@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+      includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
         name: 'NovaFit AI Gym Trainer',
         short_name: 'NovaFit',
@@ -15,7 +15,12 @@ export default defineConfig({
         theme_color: '#141210',
         background_color: '#141210',
         display: 'standalone',
-        background_color: '#141210'
+        orientation: 'portrait',
+        icons: [
+          { src: 'icon-192x192.png', sizes: '192x192', type: 'image/png' },
+          { src: 'icon-512x512.png', sizes: '512x512', type: 'image/png' },
+          { src: 'icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+        ]
       }
     })
   ],
