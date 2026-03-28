@@ -5,6 +5,7 @@ import {
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
   sendPasswordResetEmail
 } from 'firebase/auth';
 
@@ -58,7 +59,17 @@ const Login = () => {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
     } catch (err) {
-      setError(err.message.replace('Firebase: ', '').replace(/\(auth\/.*\)/, ''));
+      // Popup blocked (common in PWA standalone mode) — fall back to redirect
+      if (err.code === 'auth/popup-blocked' || err.code === 'auth/cancelled-popup-request') {
+        try {
+          const provider = new GoogleAuthProvider();
+          await signInWithRedirect(auth, provider);
+        } catch (redirectErr) {
+          setError(redirectErr.message.replace('Firebase: ', '').replace(/\s*\(auth\/[^)]*\)\.?/g, '').trim());
+        }
+      } else {
+        setError(err.message.replace('Firebase: ', '').replace(/\s*\(auth\/[^)]*\)\.?/g, '').trim());
+      }
     }
   };
 

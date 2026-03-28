@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './index.css';
 
 import { auth, db } from './firebase';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { onAuthStateChanged, signOut, getRedirectResult } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 import { generateWorkoutPlan } from './utils/aiService';
@@ -39,6 +39,10 @@ function App() {
 
   // Auth listener + load saved data
   useEffect(() => {
+    // Must await getRedirectResult FIRST so Firebase processes the OAuth redirect
+    // before onAuthStateChanged fires — otherwise it fires with null and shows login
+    getRedirectResult(auth).catch(() => {});
+
     const unsub = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
