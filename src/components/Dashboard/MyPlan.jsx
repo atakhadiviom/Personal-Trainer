@@ -43,6 +43,18 @@ const MyPlan = ({ formData, aiPlan }) => {
           if (data.completedExercises) setCompletedExercises(data.completedExercises);
           if (data.weeklyPlans) setWeeklyPlans(data.weeklyPlans);
           if (data.formData?.weight) setCheckinData(prev => ({ ...prev, currentWeight: data.formData.weight }));
+
+          // If week 1 already completed before this update (old key format), show check-in automatically
+          if (localPlan && !data.weeklyPlans?.['2']) {
+            const schedule = localPlan.workout.schedule;
+            const completed = data.completedExercises || {};
+            const w1Done = schedule?.every((day) =>
+              day.exercises.every((_, exIdx) =>
+                completed[`w1_${day.id}_${exIdx}`] || completed[`${day.id}_${exIdx}`]
+              )
+            );
+            if (w1Done) setTimeout(() => setShowCheckin(true), 800);
+          }
         }
       } catch (e) {
         console.error('Could not load user data:', e);
@@ -214,6 +226,9 @@ Return ONLY this JSON (no markdown):
   };
 
   const schedule = getScheduleForWeek(selectedWeek);
+  const currentWeekDone = isWeekComplete(selectedWeek, schedule, completedExercises);
+  const nextWeekExists = !!getScheduleForWeek(selectedWeek + 1);
+  const showCheckinBanner = currentWeekDone && !nextWeekExists && selectedWeek < 12;
 
   if (!localPlan) {
     return (
@@ -228,6 +243,16 @@ Return ONLY this JSON (no markdown):
   return (
     <div className="animate-fade-in">
       {error && <div className="alert-box alert-warning" style={{ marginBottom: '16px' }}>{error}</div>}
+
+      {/* Week Complete Banner */}
+      {showCheckinBanner && (
+        <button
+          onClick={() => setShowCheckin(true)}
+          style={{ width: '100%', marginBottom: '16px', padding: '16px', borderRadius: 'var(--r-md)', border: '2px solid var(--accent-cyan)', background: 'rgba(0,229,255,0.1)', color: 'var(--accent-cyan)', cursor: 'pointer', fontWeight: 'bold', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+        >
+          🎉 Week {selectedWeek} Complete! → Submit Check-In to Unlock Week {selectedWeek + 1}
+        </button>
+      )}
 
       {/* Week Selector */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
