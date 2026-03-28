@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { auth, db, aiInstance } from '../../firebase';
 import ExerciseRow from './ExerciseRow';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
@@ -374,8 +375,8 @@ Return ONLY this JSON (no markdown):
         </>
       )}
 
-      {/* Week Complete Check-in Modal */}
-      {showCheckin && (
+      {/* Week Complete Check-in Modal — rendered via Portal to escape parent overflow/transform */}
+      {showCheckin && createPortal(
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
           <div className="section-card" style={{ width: '100%', maxWidth: '480px', borderRadius: 'var(--r-lg)', padding: '32px 24px', maxHeight: '85vh', overflowY: 'auto', position: 'relative' }}>
             <button onClick={() => setShowCheckin(false)} style={{ position: 'absolute', top: '16px', right: '20px', background: 'none', border: 'none', color: 'var(--text-dim)', fontSize: '1.8rem', cursor: 'pointer', lineHeight: 1 }}>×</button>
@@ -431,7 +432,7 @@ Return ONLY this JSON (no markdown):
             </button>
           </div>
         </div>
-      )}
+      , document.body)}
     </div>
   );
 };
