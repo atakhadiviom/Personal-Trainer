@@ -65,7 +65,7 @@ const ProfilePage = ({ formData, resetWizard }) => {
                 <LineChart width={340} height={200} data={
                     Array.from({length: 12}, (_, i) => ({ 
                       week: `W${i+1}`, 
-                      weight: formData.goal === 'fatloss' ? parseInt(formData.weight) - (i * (dynamicTDEE ? (dynamicTDEE - 500) / 7700 * 7 : 0.5)) : parseInt(formData.weight) + (i * (dynamicTDEE ? (dynamicTDEE + 500) / 7700 * 7 : 0.3))
+                      weight: formData.goal === 'fatloss' ? parseInt(formData.weight) - (i * (dynamicTDEE ? 500 * 7 / 7700 : 0.5)) : parseInt(formData.weight) + (i * (dynamicTDEE ? 500 * 7 / 7700 : 0.3))
                     }))
                   }>
                     <XAxis dataKey="week" stroke="var(--text-dim)" fontSize={12} tickLine={false} axisLine={false} />
