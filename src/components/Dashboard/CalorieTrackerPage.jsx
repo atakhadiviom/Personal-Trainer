@@ -8,6 +8,9 @@ const CalorieTrackerPage = ({ formData }) => {
   const weight = parseInt(formData.weight) || 75;
   const isFatLoss = formData.goal === 'fatloss';
   const [dynamicTarget, setDynamicTarget] = useState(null);
+  const [fitSteps, setFitSteps] = useState(null);
+  const [fitCalsBurned, setFitCalsBurned] = useState(null);
+  const [plateauAlert, setPlateauAlert] = useState(false);
 
   const targetCals = isFatLoss ? weight * 22 : weight * 30;
   const finalTargetCals = dynamicTarget || targetCals;
@@ -49,6 +52,33 @@ const CalorieTrackerPage = ({ formData }) => {
   }, [messages]);
 
   useEffect(() => {
+    const checkPlateau = async () => {
+      if (!dynamicTarget) return;
+      const user = auth.currentUser;
+      if (!user) return;
+      try {
+        const days = [];
+        for (let i = 1; i <= 7; i++) {
+          const d = new Date();
+          d.setDate(d.getDate() - i);
+          const dateStr = d.toISOString().split('T')[0];
+          const snap = await getDoc(doc(db, 'users', user.uid, 'calorieLog', dateStr));
+          if (snap.exists()) {
+            const entries = snap.data().entries || [];
+            const total = entries.reduce((s, e) => s + (e.cals || 0), 0);
+            if (total > 0) days.push(total);
+          }
+        }
+        if (days.length >= 5) {
+          const avg = days.reduce((a, b) => a + b, 0) / days.length;
+          if (avg > finalTargetCals * 0.95) setPlateauAlert(true);
+        }
+      } catch (e) { console.warn('Plateau check error:', e); }
+    };
+    checkPlateau();
+  }, [dynamicTarget, finalTargetCals]);
+
+  useEffect(() => {
     const fetchTDEE = async () => {
       if (googleFit.getToken()) {
         try {
@@ -59,6 +89,18 @@ const CalorieTrackerPage = ({ formData }) => {
     };
     fetchTDEE();
   }, [isFatLoss]);
+
+  useEffect(() => {
+    const fetchActivityData = async () => {
+      if (!googleFit.getToken()) return;
+      try {
+        const [steps, cals] = await Promise.all([googleFit.getSteps(), googleFit.getCaloriesBurned()]);
+        if (steps != null) setFitSteps(steps);
+        if (cals != null) setFitCalsBurned(cals);
+      } catch (e) { console.warn('Activity fetch error:', e); }
+    };
+    fetchActivityData();
+  }, []);
 
   let totalCals = 0, totalPro = 0, totalCarbs = 0, totalFat = 0;
   for (let i = 0; i < entries.length; i++) {
@@ -178,6 +220,24 @@ Be accurate. Use standard serving sizes if the user doesn't specify amounts. All
           <MacroRing label="Carbs" current={totalCarbs} target={targetCarbs} color="var(--accent-cyan)" unit="g" />
           <MacroRing label="Fat" current={totalFat} target={targetFat} color="var(--accent-purple)" unit="g" />
         </div>
+        {/* Feature 1: Step calorie sync */}
+        {fitSteps != null && fitSteps > 0 && (
+          <div style={{ padding: '8px 16px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>🚶 Steps bonus</span>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#e8a838' }}>+{Math.round(fitSteps * 0.04)} kcal from {fitSteps.toLocaleString()} steps</span>
+          </div>
+        )}
+        {/* Feature 4: Smart hydration target */}
+        <div style={{ padding: '8px 16px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>💧 Hydration goal</span>
+          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--accent-blue)' }}>{(fitCalsBurned || 0) > 500 ? '3.0' : '2.5'}L today{(fitCalsBurned || 0) > 500 ? ' (+0.5L for activity)' : ''}</span>
+        </div>
+        {/* Feature 11: Plateau alert */}
+        {plateauAlert && (
+          <div style={{ padding: '10px 16px', borderTop: '1px solid rgba(232,168,56,0.3)', background: 'rgba(232,168,56,0.06)', borderRadius: '0 0 var(--r-md) var(--r-md)' }}>
+            <span style={{ fontSize: '0.82rem', color: '#e8a838' }}>📊 Plateau Alert — You've been at target calories for 7 days. Consider a 200 kcal reduction or a refeed day.</span>
+          </div>
+        )}
       </div>
 
       {/* Today's Log */}

@@ -16,18 +16,21 @@ const HealthPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [metrics, setMetrics] = useState({ steps: null, calories: null, heartRate: null, sleep: null });
+  const [sleepHistory, setSleepHistory] = useState([]);
 
   const fetchData = async () => {
     setLoading(true);
     setError(null);
     try {
-      const [steps, calories, heartRate, sleep] = await Promise.all([
+      const [steps, calories, heartRate, sleep, sleepHist] = await Promise.all([
         googleFit.getSteps(),
         googleFit.getCaloriesBurned(),
         googleFit.getHeartRate(),
-        googleFit.getSleep()
+        googleFit.getSleep(),
+        googleFit.getSleepHistory()
       ]);
       setMetrics({ steps, calories, heartRate, sleep });
+      if (sleepHist?.length) setSleepHistory(sleepHist);
     } catch (err) {
       if (err.message === 'Token expired') {
         setIsConnected(false);
@@ -121,6 +124,54 @@ const HealthPage = () => {
           >
             ↻ Refresh
           </button>
+
+          {/* Feature 8: Recovery Trend */}
+          {sleepHistory.length > 0 && (() => {
+            const avg = sleepHistory.reduce((s, d) => s + d.hours, 0) / sleepHistory.length;
+            const insight = avg >= 7 ? 'Great recovery week — push hard' : avg >= 5.5 ? 'Moderate recovery — stay consistent' : 'Poor sleep trend — reduce intensity';
+            const insightColor = avg >= 7 ? 'var(--accent-green)' : avg >= 5.5 ? '#e8a838' : '#ff6b6b';
+            return (
+              <div className="section-card" style={{ marginTop: '14px' }}>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px', fontFamily: "'IBM Plex Mono', monospace" }}>Recovery Trend</div>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', height: '60px', marginBottom: '8px' }}>
+                  {sleepHistory.map((d, i) => {
+                    const barColor = d.hours >= 7 ? 'var(--accent-green)' : d.hours >= 5.5 ? '#e8a838' : '#ff6b6b';
+                    const heightPct = Math.min(Math.round((d.hours / 10) * 100), 100);
+                    return (
+                      <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', height: '100%', justifyContent: 'flex-end' }}>
+                        <div style={{ width: '100%', background: barColor, borderRadius: '3px 3px 0 0', height: `${heightPct}%`, opacity: 0.85 }} />
+                        <div style={{ fontSize: '0.6rem', color: 'var(--text-dim)' }}>{d.date?.slice(5)}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div style={{ fontSize: '0.82rem', color: insightColor, fontWeight: 600 }}>{insight}</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '4px' }}>Avg {avg.toFixed(1)} hrs / night</div>
+              </div>
+            );
+          })()}
+
+          {/* Feature 12: Chronotype Scheduling */}
+          {sleepHistory.length > 0 && (() => {
+            const avg = sleepHistory.reduce((s, d) => s + d.hours, 0) / sleepHistory.length;
+            const { label, time } = avg >= 8
+              ? { label: 'Night Owl', time: '5–7 PM' }
+              : avg >= 7
+              ? { label: 'Flexible', time: 'Any time' }
+              : { label: 'Early Bird', time: '7–9 AM' };
+            return (
+              <div className="section-card" style={{ marginTop: '14px' }}>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px', fontFamily: "'IBM Plex Mono', monospace" }}>Optimal Training Time</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ fontSize: '2rem' }}>⏰</div>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{time}</div>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginTop: '2px' }}>{label} · based on your sleep pattern</div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
 
           <p style={{ textAlign: 'center', color: 'var(--text-dim)', fontSize: '0.72rem', marginTop: '16px' }}>
             Data from Google Fit · CMF Watch 2 → Nothing X → Health Connect → Google Fit

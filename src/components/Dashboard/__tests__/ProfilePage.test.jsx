@@ -16,6 +16,11 @@ vi.mock('firebase/auth', () => ({
   signOut: vi.fn(),
 }));
 
+vi.mock('../../../utils/googleFitService', () => ({
+  getToken: vi.fn(() => null),
+  getWeeklyAverageCalories: vi.fn(() => Promise.resolve(null)),
+}));
+
 vi.mock('recharts', () => ({
   LineChart: ({ children }) => <div data-testid="line-chart">{children}</div>,
   Line: () => <div data-testid="line" />,

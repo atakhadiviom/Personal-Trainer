@@ -15,6 +15,11 @@ vi.mock('firebase/auth', () => ({
   signOut: vi.fn(),
 }));
 
+vi.mock('../utils/googleFitService', () => ({
+  getToken: vi.fn(() => null),
+  getWeeklyAverageCalories: vi.fn(() => Promise.resolve(null)),
+}));
+
 // Mock recharts to avoid rendering issues with SVGs/measurements in jsdom
 vi.mock('recharts', async () => {
   const actual = await vi.importActual('recharts');

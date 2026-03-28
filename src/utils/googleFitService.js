@@ -126,3 +126,54 @@ export const getWeeklyAverageCalories = async () => {
   }
   return days > 0 ? Math.round(total / days) : null;
 };
+
+// 7-day average daily steps
+export const get7DayStepAverage = async () => {
+  const end = Date.now();
+  const start = end - 7 * 86400000;
+  const data = await fetchFit('https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate', 'POST', {
+    aggregateBy: [{ dataTypeName: 'com.google.step_count.delta' }],
+    bucketByTime: { durationMillis: 86400000 },
+    startTimeMillis: start,
+    endTimeMillis: end
+  });
+  const buckets = data.bucket || [];
+  let total = 0, days = 0;
+  for (const b of buckets) {
+    const val = b.dataset?.[0]?.point?.[0]?.value?.[0]?.intVal;
+    if (val) { total += val; days++; }
+  }
+  return days > 0 ? Math.round(total / days) : null;
+};
+
+// Resting heart rate = 20th percentile of today's HR readings
+export const getRestingHeartRate = async () => {
+  const startNs = new Date().setHours(0, 0, 0, 0) * 1000000;
+  const endNs = Date.now() * 1000000;
+  const data = await fetchFit(
+    `https://www.googleapis.com/fitness/v1/users/me/dataSources/derived:com.google.heart_rate.bpm:com.google.android.gms:merge_heart_rate_bpm/datasets/${startNs}-${endNs}`
+  );
+  const points = data.point || [];
+  if (!points.length) return null;
+  const sorted = points.map(p => p.value[0].fpVal).sort((a, b) => a - b);
+  const idx = Math.floor(sorted.length * 0.2);
+  return Math.round(sorted[idx]);
+};
+
+// Sleep history: last 7 days array of { date: 'YYYY-MM-DD', hours: float }
+export const getSleepHistory = async () => {
+  const end = Date.now();
+  const start = end - 7 * 86400000;
+  const data = await fetchFit('https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate', 'POST', {
+    aggregateBy: [{ dataTypeName: 'com.google.sleep.segment' }],
+    bucketByTime: { durationMillis: 86400000 },
+    startTimeMillis: start,
+    endTimeMillis: end
+  });
+  return (data.bucket || []).map(b => {
+    const date = new Date(parseInt(b.startTimeMillis)).toISOString().split('T')[0];
+    const points = b.dataset?.[0]?.point || [];
+    const totalMs = points.reduce((acc, p) => acc + (p.endTimeNanos - p.startTimeNanos) / 1000000, 0);
+    return { date, hours: parseFloat((totalMs / 3600000).toFixed(1)) };
+  });
+};

@@ -18,6 +18,13 @@ const MyPlan = ({ formData, aiPlan }) => {
   const [sleepData, setSleepData] = useState(null);
   const [readinessColor, setReadinessColor] = useState('gray');
   const [readinessLabel, setReadinessLabel] = useState('Checking Readiness...');
+  const [fitSteps, setFitSteps] = useState(null);
+  const [fitCalsBurned, setFitCalsBurned] = useState(null);
+  const [restingHR, setRestingHR] = useState(null);
+  const [stepAvg7Day, setStepAvg7Day] = useState(null);
+  const [nudgeDismissed, setNudgeDismissed] = useState(!!sessionStorage.getItem('gfit_nudge_dismissed'));
+  const [heartRateForCheckin, setHeartRateForCheckin] = useState(null);
+  const [sleepHistoryForCheckin, setSleepHistoryForCheckin] = useState([]);
   const [checkinData, setCheckinData] = useState({
     currentWeight: formData?.weight || '',
     weekRating: 'perfect',
@@ -38,28 +45,47 @@ const MyPlan = ({ formData, aiPlan }) => {
   useEffect(() => { setLocalPlan(aiPlan); }, [aiPlan]);
 
   useEffect(() => {
-    const fetchSleep = async () => {
-      if (googleFit.getToken()) {
-        try {
-          const hrs = await googleFit.getSleep();
-          if (hrs) {
-            setSleepData(hrs);
-            const numHrs = parseFloat(hrs);
-            if (numHrs >= 7) {
-              setReadinessColor('var(--accent-green)');
-              setReadinessLabel('Optimal Readiness');
-            } else if (numHrs >= 5.5) {
-              setReadinessColor('var(--accent-orange)');
-              setReadinessLabel('Moderate Readiness');
-            } else {
-              setReadinessColor('#ff6b6b');
-              setReadinessLabel('Low Readiness — Consider Active Recovery');
-            }
+    const fetchHealthData = async () => {
+      if (!googleFit.getToken()) return;
+      try {
+        // Sleep + readiness
+        const hrs = await googleFit.getSleep();
+        if (hrs) {
+          setSleepData(hrs);
+          const numHrs = parseFloat(hrs);
+          const baseline = parseInt(localStorage.getItem('gfit_hr_baseline') || '0');
+          const rhr = await googleFit.getRestingHeartRate();
+          if (rhr) {
+            setRestingHR(rhr);
+            localStorage.setItem('gfit_hr_baseline', String(rhr));
           }
-        } catch (e) { console.warn('Sleep fetch error:', e); }
-      }
+          const hrElevated = rhr && baseline && rhr > baseline * 1.10;
+          if (hrElevated && numHrs < 6) {
+            setReadinessColor('#ff6b6b');
+            setReadinessLabel('⚠️ High HR + Low Sleep — Rest Day Recommended');
+          } else if (numHrs >= 7) {
+            setReadinessColor('var(--accent-green)');
+            setReadinessLabel('Optimal Readiness');
+          } else if (numHrs >= 5.5) {
+            setReadinessColor('var(--accent-orange)');
+            setReadinessLabel('Moderate Readiness');
+          } else {
+            setReadinessColor('#ff6b6b');
+            setReadinessLabel('Low Readiness — Consider Active Recovery');
+          }
+        }
+        // Steps + calories for progress pills
+        const [steps, cals, avg] = await Promise.all([
+          googleFit.getSteps(),
+          googleFit.getCaloriesBurned(),
+          googleFit.get7DayStepAverage()
+        ]);
+        if (steps != null) setFitSteps(steps);
+        if (cals != null) setFitCalsBurned(cals);
+        if (avg != null) setStepAvg7Day(avg);
+      } catch (e) { console.warn('Health data fetch error:', e); }
     };
-    fetchSleep();
+    fetchHealthData();
   }, []);
 
   useEffect(() => {
@@ -192,6 +218,16 @@ Return ONLY this JSON (no markdown):
     setIsGenerating(true);
     try {
       const currentSchedule = getScheduleForWeek(selectedWeek);
+      // Fetch HR + sleep history for AI context (features 9 & 10)
+      let hrData = heartRateForCheckin;
+      let sleepHist = sleepHistoryForCheckin;
+      if (googleFit.getToken()) {
+        try {
+          const [hr, sh] = await Promise.all([googleFit.getHeartRate(), googleFit.getSleepHistory()]);
+          if (hr) { hrData = hr; setHeartRateForCheckin(hr); }
+          if (sh?.length) { sleepHist = sh.map(d => d.hours); setSleepHistoryForCheckin(sh.map(d => d.hours)); }
+        } catch (e) { console.warn('Pre-checkin health fetch:', e); }
+      }
       const model = getGenerativeModel(aiInstance, {
         model: 'gemini-2.5-flash-lite',
         generationConfig: { responseMimeType: 'application/json' }
@@ -217,6 +253,8 @@ INSTRUCTIONS:
 - If newPain is mentioned: remove exercises that stress that area
 - Keep same number of days and same day labels
 - Vary exercises slightly for novelty (swap 1-2 per day max)
+- HEART RATE DATA: ${hrData ? `avg ${hrData} BPM — ${hrData > 160 ? 'reduce RPE by 1 level (was very intense)' : hrData < 130 ? 'increase intensity (felt easy)' : 'maintain progression (normal intensity)'}` : 'not available'}
+- SLEEP HISTORY last 7 days (hours): ${sleepHist.length ? sleepHist.join(', ') + (sleepHist.filter(h => h < 6).length >= 3 ? ' — MORE THAN 3 NIGHTS UNDER 6HRS: replace any Power/Heavy day with Active Recovery (light cardio + mobility)' : sleepHist.every(h => h >= 7) ? ' — ALL NIGHTS 7+HRS: athlete is well rested, apply progressive overload' : '') : 'not available'}
 
 Return ONLY this JSON (no markdown):
 {
@@ -292,6 +330,30 @@ Return ONLY this JSON (no markdown):
             <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: readinessColor }}>{readinessLabel}</div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>{sleepData} hrs sleep last night</div>
           </div>
+        </div>
+      )}
+
+      {/* Feature 2: Progress Rings / Activity Pills */}
+      {(fitSteps != null || fitCalsBurned != null) && (
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
+          {fitSteps != null && (
+            <div style={{ padding: '6px 12px', borderRadius: '20px', background: 'rgba(232,168,56,0.12)', border: '1px solid rgba(232,168,56,0.3)', fontSize: '0.82rem', color: '#e8a838', fontWeight: 600 }}>
+              👟 {fitSteps.toLocaleString()} steps
+            </div>
+          )}
+          {fitCalsBurned != null && (
+            <div style={{ padding: '6px 12px', borderRadius: '20px', background: 'rgba(212,101,74,0.12)', border: '1px solid rgba(212,101,74,0.3)', fontSize: '0.82rem', color: '#d4654a', fontWeight: 600 }}>
+              🔥 {fitCalsBurned.toLocaleString()} kcal burned
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Feature 7: Inactivity Nudge */}
+      {!nudgeDismissed && fitSteps != null && stepAvg7Day != null && new Date().getHours() >= 18 && fitSteps < stepAvg7Day * 0.6 && (
+        <div style={{ marginBottom: '12px', padding: '12px 14px', borderRadius: 'var(--r-md)', background: 'rgba(232,168,56,0.08)', border: '1px solid rgba(232,168,56,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+          <span style={{ fontSize: '0.85rem', color: '#e8a838' }}>🚶 You're behind today — a 10-min walk would close the gap!</span>
+          <button onClick={() => { setNudgeDismissed(true); sessionStorage.setItem('gfit_nudge_dismissed', '1'); }} style={{ background: 'none', border: 'none', color: 'var(--text-dim)', fontSize: '1.2rem', cursor: 'pointer', lineHeight: 1, padding: 0 }}>×</button>
         </div>
       )}
 

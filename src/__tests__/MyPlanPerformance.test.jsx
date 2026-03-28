@@ -22,6 +22,14 @@ vi.mock('firebase/firestore', () => {
 vi.mock('firebase/ai', () => ({
   getGenerativeModel: vi.fn(),
 }));
+vi.mock('../utils/googleFitService', () => ({
+  getToken: vi.fn(() => null),
+  getSleep: vi.fn(() => Promise.resolve(null)),
+  getRestingHeartRate: vi.fn(() => Promise.resolve(null)),
+  getSteps: vi.fn(() => Promise.resolve(null)),
+  getCaloriesBurned: vi.fn(() => Promise.resolve(null)),
+  get7DayStepAverage: vi.fn(() => Promise.resolve(null)),
+}));
 
 describe('MyPlan Performance Optimization', () => {
   const mockPlan = {
