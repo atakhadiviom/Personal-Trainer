@@ -17,6 +17,7 @@ import Navbar from './components/Layout/Navbar';
 import MyPlan from './components/Dashboard/MyPlan';
 import CalorieTrackerPage from './components/Dashboard/CalorieTrackerPage';
 import ProfilePage from './components/Dashboard/ProfilePage';
+import HealthPage from './components/Dashboard/HealthPage';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -127,6 +128,7 @@ function App() {
     switch (activeTab) {
       case 'plan': return <MyPlan formData={formData} aiPlan={aiPlan} />;
       case 'calories': return <CalorieTrackerPage formData={formData} />;
+      case 'health': return <HealthPage />;
       case 'profile': return <ProfilePage formData={formData} resetWizard={resetWizard} />;
       default: return <MyPlan formData={formData} aiPlan={aiPlan} />;
     }
