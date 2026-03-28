@@ -75,11 +75,11 @@ describe('MyPlan Performance Optimization', () => {
     const lastCall = updateDoc.mock.calls[0];
     const payload = lastCall[1].completedExercises;
     expect(payload).toEqual({
-      'day1_0': true,
-      'day1_1': true,
-      'day1_2': true,
-      'day1_3': true,
-      'day1_4': true,
+      'w1_day1_0': true,
+      'w1_day1_1': true,
+      'w1_day1_2': true,
+      'w1_day1_3': true,
+      'w1_day1_4': true,
     });
   });
 });

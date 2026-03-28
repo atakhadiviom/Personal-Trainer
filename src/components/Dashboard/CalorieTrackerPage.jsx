@@ -2,14 +2,18 @@ import React, { useState, useEffect, useRef } from 'react';
 import { auth, db, aiInstance } from '../../firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { getGenerativeModel } from 'firebase/ai';
+import * as googleFit from '../../utils/googleFitService';
 
 const CalorieTrackerPage = ({ formData }) => {
   const weight = parseInt(formData.weight) || 75;
   const isFatLoss = formData.goal === 'fatloss';
+  const [dynamicTarget, setDynamicTarget] = useState(null);
+
   const targetCals = isFatLoss ? weight * 22 : weight * 30;
+  const finalTargetCals = dynamicTarget || targetCals;
   const targetPro = Math.round(weight * 2);
-  const targetCarbs = Math.round((targetCals * 0.4) / 4);
-  const targetFat = Math.round((targetCals * 0.25) / 9);
+  const targetCarbs = Math.round((finalTargetCals * 0.4) / 4);
+  const targetFat = Math.round((finalTargetCals * 0.25) / 9);
 
   const today = new Date().toISOString().split('T')[0];
   const [messages, setMessages] = useState([
@@ -43,6 +47,18 @@ const CalorieTrackerPage = ({ formData }) => {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  useEffect(() => {
+    const fetchTDEE = async () => {
+      if (googleFit.getToken()) {
+        try {
+          const tdee = await googleFit.getWeeklyAverageCalories();
+          if (tdee) setDynamicTarget(isFatLoss ? tdee - 500 : tdee + 500);
+        } catch (e) { console.warn('TDEE fetch error:', e); }
+      }
+    };
+    fetchTDEE();
+  }, [isFatLoss]);
 
   let totalCals = 0, totalPro = 0, totalCarbs = 0, totalFat = 0;
   for (let i = 0; i < entries.length; i++) {
@@ -157,7 +173,7 @@ Be accurate. Use standard serving sizes if the user doesn't specify amounts. All
       <div className="section-card" style={{ borderTop: '4px solid var(--accent-green)', flexShrink: 0 }}>
         <div className="section-header"><h3 style={{ color: 'var(--accent-green)' }}>🔥 Today — {today}</h3></div>
         <div className="macro-rings">
-          <MacroRing label="Calories" current={totalCals} target={targetCals} color="var(--accent-orange)" unit="kcal" />
+          <MacroRing label="Calories" current={totalCals} target={finalTargetCals} color="var(--accent-orange)" unit="kcal" />
           <MacroRing label="Protein" current={totalPro} target={targetPro} color="var(--accent-green)" unit="g" />
           <MacroRing label="Carbs" current={totalCarbs} target={targetCarbs} color="var(--accent-cyan)" unit="g" />
           <MacroRing label="Fat" current={totalFat} target={targetFat} color="var(--accent-purple)" unit="g" />

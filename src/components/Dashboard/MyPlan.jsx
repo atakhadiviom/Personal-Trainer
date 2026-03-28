@@ -4,6 +4,7 @@ import { auth, db, aiInstance } from '../../firebase';
 import ExerciseRow from './ExerciseRow';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { getGenerativeModel } from 'firebase/ai';
+import * as googleFit from '../../utils/googleFitService';
 
 const MyPlan = ({ formData, aiPlan }) => {
   const [selectedWeek, setSelectedWeek] = useState(1);
@@ -14,6 +15,9 @@ const MyPlan = ({ formData, aiPlan }) => {
   const [error, setError] = useState('');
   const [showCheckin, setShowCheckin] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [sleepData, setSleepData] = useState(null);
+  const [readinessColor, setReadinessColor] = useState('gray');
+  const [readinessLabel, setReadinessLabel] = useState('Checking Readiness...');
   const [checkinData, setCheckinData] = useState({
     currentWeight: formData?.weight || '',
     weekRating: 'perfect',
@@ -32,6 +36,31 @@ const MyPlan = ({ formData, aiPlan }) => {
   };
 
   useEffect(() => { setLocalPlan(aiPlan); }, [aiPlan]);
+
+  useEffect(() => {
+    const fetchSleep = async () => {
+      if (googleFit.getToken()) {
+        try {
+          const hrs = await googleFit.getSleep();
+          if (hrs) {
+            setSleepData(hrs);
+            const numHrs = parseFloat(hrs);
+            if (numHrs >= 7) {
+              setReadinessColor('var(--accent-green)');
+              setReadinessLabel('Optimal Readiness');
+            } else if (numHrs >= 5.5) {
+              setReadinessColor('var(--accent-orange)');
+              setReadinessLabel('Moderate Readiness');
+            } else {
+              setReadinessColor('#ff6b6b');
+              setReadinessLabel('Low Readiness — Consider Active Recovery');
+            }
+          }
+        } catch (e) { console.warn('Sleep fetch error:', e); }
+      }
+    };
+    fetchSleep();
+  }, []);
 
   useEffect(() => {
     const load = async () => {
@@ -116,7 +145,7 @@ const MyPlan = ({ formData, aiPlan }) => {
     const text = `I just finished Week ${selectedWeek} of my AI Gym Transformation with NovaFit 🔥`;
     if (navigator.share) {
       try { await navigator.share({ title: 'NovaFit AI', text, url: window.location.href }); }
-      catch (e) { displayError('Could not share plan.'); }
+      catch { displayError('Could not share plan.'); }
     } else {
       navigator.clipboard.writeText(text);
       alert('Status copied to clipboard!');
@@ -253,6 +282,17 @@ Return ONLY this JSON (no markdown):
         >
           🎉 Week {selectedWeek} Complete! → Submit Check-In to Unlock Week {selectedWeek + 1}
         </button>
+      )}
+
+      {/* Daily Readiness Badge */}
+      {sleepData !== null && (
+        <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', borderRadius: 'var(--r-md)', background: 'rgba(255,255,255,0.05)', border: `1px solid ${readinessColor}` }}>
+          <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: readinessColor, boxShadow: `0 0 8px ${readinessColor}` }} />
+          <div>
+            <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: readinessColor }}>{readinessLabel}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>{sleepData} hrs sleep last night</div>
+          </div>
+        </div>
       )}
 
       {/* Week Selector */}

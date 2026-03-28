@@ -92,7 +92,7 @@ describe('ProfilePage', () => {
     render(<ProfilePage formData={{}} resetWizard={mockResetWizard} />);
 
     const dashes = screen.getAllByText('—');
-    expect(dashes.length).toBe(6); // age, weight, height, goal, gym, location
+    expect(dashes.length).toBe(7); // age, weight, height, goal, gym, location, tdee
   });
 
   it('renders weight projection chart when weight is present', () => {
