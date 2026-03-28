@@ -11,7 +11,7 @@ const ExerciseRow = ({
   handleSwap
 }) => {
   return (
-    <tr style={{ opacity: isDone ? 0.5 : 1, textDecoration: isDone ? 'line-through' : 'none' }}>
+    <tr className={isDone ? 'exercise-done' : ''} style={{ opacity: isDone ? 0.5 : 1 }}>
       <td>
         <input
           id={`exercise-${dayIdx}-${exIdx}`}
