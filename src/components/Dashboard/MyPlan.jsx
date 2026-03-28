@@ -376,8 +376,8 @@ Return ONLY this JSON (no markdown):
 
       {/* Week Complete Check-in Modal */}
       {showCheckin && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-          <div className="section-card" style={{ width: '100%', maxWidth: '480px', borderRadius: 'var(--r-lg) var(--r-lg) 0 0', padding: '32px 24px', maxHeight: '90vh', overflowY: 'auto', position: 'relative' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div className="section-card" style={{ width: '100%', maxWidth: '480px', borderRadius: 'var(--r-lg)', padding: '32px 24px', maxHeight: '85vh', overflowY: 'auto', position: 'relative' }}>
             <button onClick={() => setShowCheckin(false)} style={{ position: 'absolute', top: '16px', right: '20px', background: 'none', border: 'none', color: 'var(--text-dim)', fontSize: '1.8rem', cursor: 'pointer', lineHeight: 1 }}>×</button>
 
             <div style={{ textAlign: 'center', marginBottom: '24px' }}>
