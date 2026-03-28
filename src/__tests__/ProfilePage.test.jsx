@@ -77,7 +77,7 @@ describe('ProfilePage', () => {
   it('handles missing formData gracefully', () => {
     render(<ProfilePage formData={{}} resetWizard={vi.fn()} />);
     const emDashes = screen.getAllByText('—');
-    expect(emDashes.length).toBe(6);
+    expect(emDashes.length).toBe(7);
   });
 
   it('calls resetWizard on Recalibrate button click', () => {

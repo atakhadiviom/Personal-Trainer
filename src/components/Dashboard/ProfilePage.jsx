@@ -2,11 +2,25 @@ import React from 'react';
 import { auth } from '../../firebase';
 import { signOut } from 'firebase/auth';
 import { LineChart, Line, XAxis, YAxis, Tooltip } from 'recharts';
+import * as googleFit from '../../utils/googleFitService';
+import { useState, useEffect } from 'react';
 
 const ProfilePage = ({ formData, resetWizard }) => {
   const user = auth.currentUser;
 
   const handleSignOut = () => signOut(auth);
+  const [dynamicTDEE, setDynamicTDEE] = useState(null);
+  useEffect(() => {
+    const fetchTDEE = async () => {
+      if (googleFit.getToken()) {
+        try {
+          const tdee = await googleFit.getWeeklyAverageCalories();
+          if (tdee) setDynamicTDEE(tdee);
+        } catch (e) { console.warn('TDEE fetch error:', e); }
+      }
+    };
+    fetchTDEE();
+  }, []);
 
   return (
     <div className="animate-fade-in">
@@ -39,6 +53,7 @@ const ProfilePage = ({ formData, resetWizard }) => {
               <div className="profile-stat"><span className="label">Goal</span><span className="value">{formData.goal ? formData.goal.replace('fatloss', 'Fat Loss').replace('muscle', 'Build Muscle').replace('endurance', 'Endurance') : '—'}</span></div>
               <div className="profile-stat"><span className="label">Gym</span><span className="value">{formData.gymName || '—'}</span></div>
               <div className="profile-stat"><span className="label">Location</span><span className="value">{formData.gymLocation || '—'}</span></div>
+              <div className="profile-stat"><span className="label">TDEE</span><span className="value">{dynamicTDEE ? `${dynamicTDEE} kcal (Dynamic)` : '—'}</span></div>
             </div>
           </div>
 
@@ -50,7 +65,7 @@ const ProfilePage = ({ formData, resetWizard }) => {
                 <LineChart width={340} height={200} data={
                     Array.from({length: 12}, (_, i) => ({ 
                       week: `W${i+1}`, 
-                      weight: formData.goal === 'fatloss' ? parseInt(formData.weight) - (i * 0.5) : parseInt(formData.weight) + (i * 0.3) 
+                      weight: formData.goal === 'fatloss' ? parseInt(formData.weight) - (i * (dynamicTDEE ? (dynamicTDEE - 500) / 7700 * 7 : 0.5)) : parseInt(formData.weight) + (i * (dynamicTDEE ? (dynamicTDEE + 500) / 7700 * 7 : 0.3))
                     }))
                   }>
                     <XAxis dataKey="week" stroke="var(--text-dim)" fontSize={12} tickLine={false} axisLine={false} />

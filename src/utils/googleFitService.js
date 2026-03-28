@@ -103,3 +103,26 @@ export const getSleep = async () => {
   const totalMs = points.reduce((acc, p) => acc + (p.endTimeNanos - p.startTimeNanos) / 1000000, 0);
   return totalMs > 0 ? (totalMs / 3600000).toFixed(1) : null;
 };
+
+
+export const getWeeklyAverageCalories = async () => {
+  const end = new Date().setHours(23, 59, 59, 999);
+  const start = end - 7 * 86400000;
+  const data = await fetchFit('https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate', 'POST', {
+    aggregateBy: [{ dataTypeName: 'com.google.calories.expended' }],
+    bucketByTime: { durationMillis: 86400000 },
+    startTimeMillis: start,
+    endTimeMillis: end
+  });
+  const buckets = data.bucket || [];
+  let total = 0;
+  let days = 0;
+  for (const b of buckets) {
+    const val = b.dataset?.[0]?.point?.[0]?.value?.[0]?.fpVal;
+    if (val) {
+      total += val;
+      days++;
+    }
+  }
+  return days > 0 ? Math.round(total / days) : null;
+};
