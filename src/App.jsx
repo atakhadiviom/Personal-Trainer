@@ -8,6 +8,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { generateWorkoutPlan } from './utils/aiService';
 
 import Login from './components/Auth/Login';
+import Onboarding from './components/Onboarding';
 import StepBody from './components/Wizard/StepBody';
 import StepProblems from './components/Wizard/StepProblems';
 import StepGym from './components/Wizard/StepGym';
@@ -37,6 +38,7 @@ function App() {
   });
   const [aiPlan, setAiPlan] = useState(null);
   const [aiError, setAiError] = useState(null);
+  const [showOnboarding, setShowOnboarding] = useState(!localStorage.getItem('novafit_onboarded'));
 
   // Auth listener + load saved data
   useEffect(() => {
@@ -142,6 +144,12 @@ function App() {
       </div>
     );
   }
+
+  // --- ONBOARDING ---
+  if (showOnboarding) return <Onboarding onFinish={() => {
+    localStorage.setItem('novafit_onboarded', '1');
+    setShowOnboarding(false);
+  }} />;
 
   // --- LOGIN ---
   if (!user) return <Login />;
