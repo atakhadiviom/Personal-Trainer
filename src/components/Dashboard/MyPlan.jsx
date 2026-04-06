@@ -218,7 +218,10 @@ Return ONLY this JSON (no markdown):
     setIsGenerating(true);
     try {
       const currentSchedule = getScheduleForWeek(selectedWeek);
-      // Fetch HR + sleep history for AI context (features 9 & 10)
+      if (!currentSchedule?.length) {
+        throw new Error('Current week schedule is unavailable.');
+      }
+
       let hrData = heartRateForCheckin;
       let sleepHist = sleepHistoryForCheckin;
       if (googleFit.getToken()) {
@@ -228,33 +231,66 @@ Return ONLY this JSON (no markdown):
           if (sh?.length) { sleepHist = sh.map(d => d.hours); setSleepHistoryForCheckin(sh.map(d => d.hours)); }
         } catch (e) { console.warn('Pre-checkin health fetch:', e); }
       }
+
+      // Collect ALL exercise names used across every week so far
+      const usedEver = new Set([
+        ...(localPlan?.workout?.schedule || []).flatMap(d => d.exercises.map(e => e.name)),
+        ...Object.values(weeklyPlans).flatMap(wp => (wp.schedule || []).flatMap(d => d.exercises.map(e => e.name)))
+      ]);
+
+      // Full exercise pool per category
+      const POOL = {
+        push: ['Dumbbell Flat Bench Press','Cable Chest Fly','Pec Deck Machine','Dips (Chest-Leaning)','Smith Machine Incline Press','Low Cable Chest Fly','Dumbbell Shoulder Press','Arnold Press','Lateral Raises (Dumbbell)','Front Raises (Dumbbell)','EZ-Bar Skull Crushers','Overhead Tricep Extension (Cable)','Close-Grip Bench Press','Tricep Dip Machine','Cable Lateral Raise','Seated Dumbbell Press'],
+        pull: ['Wide-Grip Assisted Pull-up','Single-Arm Dumbbell Row','T-Bar Row','Bent-Over Barbell Row','High Cable Row (Wide Grip)','Reverse Fly (Pec Deck)','Straight-Arm Pulldown','Incline Dumbbell Curl','Preacher Curl (Machine)','Cable Curl (Straight Bar)','Concentration Curl','Reverse Curl (EZ-Bar)','Chest-Supported Row','Rope Hammer Curl'],
+        legs: ['Hack Squat Machine','Bulgarian Split Squat','Smith Machine Squat','Sumo Dumbbell Squat','Step-ups (Dumbbell)','Hip Thrust (Barbell)','Seated Leg Extension Machine','Donkey Calf Raise','Tibialis Raise','Adductor Machine','Abductor Machine','Lying Leg Curl','Single-Leg Press','Reverse Lunge (Dumbbell)'],
+        fullbody: ['Barbell Deadlift','Dumbbell Clean & Press','Kettlebell Swing','Farmer Carries','Cable Woodchop','Ab Wheel Rollout','Dead Bug','Hollow Body Hold','Mountain Climbers','Pallof Press','Landmine Rotation','Medicine Ball Slam','Suitcase Carry','TRX Row','Battle Rope Waves']
+      };
+
+      // For each day, CODE picks the exercises — AI has no choice
+      const nextScheduleSkeleton = currentSchedule.map(day => {
+        const label = day.label.toLowerCase();
+        let pool;
+        if (label.includes('push')) pool = POOL.push;
+        else if (label.includes('pull')) pool = POOL.pull;
+        else if (label.includes('lower') || label.includes('leg')) pool = POOL.legs;
+        else pool = POOL.fullbody;
+
+        // Fresh = never used before
+        const fresh = pool.filter(ex => !usedEver.has(ex));
+        // Keep up to 1 exercise from last week for continuity (the heaviest compound)
+        const keep = day.exercises.slice(0, 1);
+        // Fill rest with fresh exercises (4 new ones)
+        const newExercises = fresh.slice(0, Math.max(day.exercises.length - 1, 4));
+        const selected = [...keep.map(e => e.name), ...newExercises].slice(0, day.exercises.length);
+
+        return { id: day.id, label: day.label, exercises: selected, warmup: day.warmup, cooldown: day.cooldown };
+      });
+
+      // Weight progression multiplier
+      const weightMult = checkinData.weekRating === 'too_easy' ? 1.075 : checkinData.weekRating === 'too_hard' ? 1.0 : 1.03;
+      const lastWeekWeights = {};
+      currentSchedule.forEach(d => d.exercises.forEach(e => { lastWeekWeights[e.name] = e.weight; }));
+
       const model = getGenerativeModel(aiInstance, {
-        model: 'gemini-2.5-flash-lite',
+        model: 'gemini-2.5-flash',
         generationConfig: { responseMimeType: 'application/json' }
       });
-      const prompt = `You are an elite personal trainer. Generate Week ${selectedWeek + 1} workouts only.
 
-CLIENT PROFILE: ${JSON.stringify(formData)}
-WEEK ${selectedWeek} FEEDBACK:
-- Weight now: ${checkinData.currentWeight}kg
-- How the week felt: ${checkinData.weekRating}
-- Energy level: ${checkinData.energyLevel}/5
-- New pain/injuries: ${checkinData.newPain || 'none'}
-- Notes: ${checkinData.notes || 'none'}
+      const prompt = `You are a personal trainer. For each exercise listed below, provide sets, reps, rest, weight, and a brief form guide. Do NOT change the exercise names.
 
-LAST WEEK SCHEDULE (for progression reference):
-${JSON.stringify(currentSchedule)}
+CLIENT: ${formData.fitnessLevel || 'beginner'}, ${formData.age}yo ${formData.gender}, ${formData.weight}kg, goal: ${formData.goal}, gym: full gym
+WEEK RATING: ${checkinData.weekRating}, Energy: ${checkinData.energyLevel}/5
+${checkinData.newPain ? `AVOID stressing: ${checkinData.newPain}` : ''}
 
-INSTRUCTIONS:
-- If weekRating is "too_easy": increase weight by 5-10%, add 1 set to 2 exercises
-- If weekRating is "perfect": increase weight by 2.5-5%, keep volume same
-- If weekRating is "too_hard": keep same weights, reduce to 2 sets, add more rest
-- If energyLevel <= 2: reduce total volume by 20%
-- If newPain is mentioned: remove exercises that stress that area
-- Keep same number of days and same day labels
-- Vary exercises slightly for novelty (swap 1-2 per day max)
-- HEART RATE DATA: ${hrData ? `avg ${hrData} BPM — ${hrData > 160 ? 'reduce RPE by 1 level (was very intense)' : hrData < 130 ? 'increase intensity (felt easy)' : 'maintain progression (normal intensity)'}` : 'not available'}
-- SLEEP HISTORY last 7 days (hours): ${sleepHist.length ? sleepHist.join(', ') + (sleepHist.filter(h => h < 6).length >= 3 ? ' — MORE THAN 3 NIGHTS UNDER 6HRS: replace any Power/Heavy day with Active Recovery (light cardio + mobility)' : sleepHist.every(h => h >= 7) ? ' — ALL NIGHTS 7+HRS: athlete is well rested, apply progressive overload' : '') : 'not available'}
+WEIGHT GUIDANCE:
+- For carried-over exercises: multiply last week's weight by ${weightMult.toFixed(3)} and round to nearest 0.5kg
+- Last week's weights: ${Object.entries(lastWeekWeights).map(([n,w])=>`${n}: ${w}`).join(', ')}
+- For NEW exercises: estimate appropriate starting weight for a ${formData.fitnessLevel || 'beginner'}
+- ${checkinData.weekRating === 'too_hard' ? 'Week was too hard — keep weights conservative' : checkinData.weekRating === 'too_easy' ? 'Week was too easy — push the weights up' : 'Week felt right — small progressive increase'}
+- ${sleepHist.filter(h=>h<6).length >= 3 ? 'Poor sleep this week — reduce volume by 1 set per exercise' : ''}
+
+EXERCISES TO FILL IN (keep these exact names):
+${nextScheduleSkeleton.map(d => `\n${d.label} (${d.id}):\n${d.exercises.map((ex,i) => `  ${i+1}. ${ex}`).join('\n')}`).join('')}
 
 Return ONLY this JSON (no markdown):
 {
@@ -263,14 +299,40 @@ Return ONLY this JSON (no markdown):
       "id": "day1",
       "label": "Upper Body Push",
       "warmup": [{"name": "string", "duration": "string"}],
-      "exercises": [{"name": "string", "sets": 3, "reps": "8-12", "rest": "90s", "weight": "Start: 20kg", "guide": "form cue"}],
+      "exercises": [{"name": "EXACT name from list above", "sets": 3, "reps": "8-12", "rest": "90s", "weight": "22.5kg", "guide": "form cue"}],
       "cooldown": [{"name": "string", "duration": "string"}]
     }
   ]
 }`;
 
       const result = await model.generateContent(prompt);
-      const nextWeekPlan = JSON.parse(result.response.text().replace(/```json/g, '').replace(/```/g, '').trim());
+      let nextWeekPlan = JSON.parse(result.response.text().replace(/```json/g, '').replace(/```/g, '').trim());
+
+      // Enforce the preselected schedule so AI can only fill in training details.
+      nextWeekPlan.schedule = nextScheduleSkeleton.map((day, dayIndex) => {
+        const generatedDay = nextWeekPlan.schedule?.[dayIndex] || {};
+        const generatedExercises = Array.isArray(generatedDay.exercises) ? generatedDay.exercises : [];
+
+        return {
+          id: day.id,
+          label: day.label,
+          warmup: day.warmup,
+          cooldown: day.cooldown,
+          exercises: day.exercises.map((exerciseName, exerciseIndex) => {
+            const generatedExercise = generatedExercises[exerciseIndex] || {};
+            const fallbackWeight = lastWeekWeights[exerciseName] || 'Start: 10kg';
+
+            return {
+              name: exerciseName,
+              sets: generatedExercise.sets ?? 3,
+              reps: generatedExercise.reps || '8-12',
+              rest: generatedExercise.rest || '90s',
+              weight: generatedExercise.weight || fallbackWeight,
+              guide: generatedExercise.guide || 'Focus on controlled reps and clean form.'
+            };
+          })
+        };
+      });
 
       const updatedWeekly = { ...weeklyPlans, [String(selectedWeek + 1)]: nextWeekPlan };
       const user = auth.currentUser;
