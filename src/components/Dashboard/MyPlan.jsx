@@ -232,11 +232,19 @@ Return ONLY this JSON (no markdown):
         } catch (e) { console.warn('Pre-checkin health fetch:', e); }
       }
 
+      const normalizeExerciseName = (name = '') =>
+        name
+          .toLowerCase()
+          .replace(/\([^)]*\)/g, ' ')
+          .replace(/[^a-z0-9]+/g, ' ')
+          .trim();
+
       // Collect ALL exercise names used across every week so far
       const usedEver = new Set([
         ...(localPlan?.workout?.schedule || []).flatMap(d => d.exercises.map(e => e.name)),
         ...Object.values(weeklyPlans).flatMap(wp => (wp.schedule || []).flatMap(d => d.exercises.map(e => e.name)))
       ]);
+      const usedEverNormalized = new Set([...usedEver].map(normalizeExerciseName));
 
       // Full exercise pool per category
       const POOL = {
@@ -246,8 +254,7 @@ Return ONLY this JSON (no markdown):
         fullbody: ['Barbell Deadlift','Dumbbell Clean & Press','Kettlebell Swing','Farmer Carries','Cable Woodchop','Ab Wheel Rollout','Dead Bug','Hollow Body Hold','Mountain Climbers','Pallof Press','Landmine Rotation','Medicine Ball Slam','Suitcase Carry','TRX Row','Battle Rope Waves']
       };
 
-      // For each day, CODE picks the exercises — AI has no choice
-      const nextScheduleSkeleton = currentSchedule.map(day => {
+      const dayConfigs = currentSchedule.map(day => {
         const label = day.label.toLowerCase();
         let pool;
         if (label.includes('push')) pool = POOL.push;
@@ -255,15 +262,24 @@ Return ONLY this JSON (no markdown):
         else if (label.includes('lower') || label.includes('leg')) pool = POOL.legs;
         else pool = POOL.fullbody;
 
-        // Fresh = never used before
-        const fresh = pool.filter(ex => !usedEver.has(ex));
-        // Keep up to 1 exercise from last week for continuity (the heaviest compound)
-        const keep = day.exercises.slice(0, 1);
-        // Fill rest with fresh exercises (4 new ones)
-        const newExercises = fresh.slice(0, Math.max(day.exercises.length - 1, 4));
-        const selected = [...keep.map(e => e.name), ...newExercises].slice(0, day.exercises.length);
+        const carryoverOptions = day.exercises.slice(0, 1).map(e => e.name);
+        const freshOptions = pool.filter(ex => !usedEverNormalized.has(normalizeExerciseName(ex)));
+        const alternateOptions = pool.filter(
+          ex => !day.exercises.some(currentEx => normalizeExerciseName(currentEx.name) === normalizeExerciseName(ex))
+        );
+        const availableOptions = [...new Set([...carryoverOptions, ...freshOptions, ...alternateOptions])];
+        const requiredNewCount = Math.max(1, Math.min(day.exercises.length - 1, availableOptions.length - 1));
 
-        return { id: day.id, label: day.label, exercises: selected, warmup: day.warmup, cooldown: day.cooldown };
+        return {
+          id: day.id,
+          label: day.label,
+          warmup: day.warmup,
+          cooldown: day.cooldown,
+          currentExercises: day.exercises.map(ex => ex.name),
+          carryoverOptions,
+          availableOptions,
+          requiredNewCount
+        };
       });
 
       // Weight progression multiplier
@@ -276,54 +292,156 @@ Return ONLY this JSON (no markdown):
         generationConfig: { responseMimeType: 'application/json' }
       });
 
-      const prompt = `You are a personal trainer. For each exercise listed below, provide sets, reps, rest, weight, and a brief form guide. Do NOT change the exercise names.
+      const buildPrompt = (retryFeedback = '') => `You are an expert personal trainer generating Week ${selectedWeek + 1} of a 12-week plan.
 
-CLIENT: ${formData.fitnessLevel || 'beginner'}, ${formData.age}yo ${formData.gender}, ${formData.weight}kg, goal: ${formData.goal}, gym: full gym
-WEEK RATING: ${checkinData.weekRating}, Energy: ${checkinData.energyLevel}/5
-${checkinData.newPain ? `AVOID stressing: ${checkinData.newPain}` : ''}
+CLIENT:
+- Goal: ${formData.goal}
+- Target weight: ${formData.targetWeight || 'not specified'}kg
+- Fitness level: ${formData.fitnessLevel || 'beginner'}
+- Age/Sex: ${formData.age} / ${formData.gender}
+- Current weight: ${checkinData.currentWeight || formData.weight}kg
+- Gym access: full gym
+- Session length: ${formData.sessionLength || '45'} minutes
+- Days per week: ${formData.daysPerWeek || currentSchedule.length}
 
-WEIGHT GUIDANCE:
-- For carried-over exercises: multiply last week's weight by ${weightMult.toFixed(3)} and round to nearest 0.5kg
-- Last week's weights: ${Object.entries(lastWeekWeights).map(([n,w])=>`${n}: ${w}`).join(', ')}
-- For NEW exercises: estimate appropriate starting weight for a ${formData.fitnessLevel || 'beginner'}
-- ${checkinData.weekRating === 'too_hard' ? 'Week was too hard — keep weights conservative' : checkinData.weekRating === 'too_easy' ? 'Week was too easy — push the weights up' : 'Week felt right — small progressive increase'}
-- ${sleepHist.filter(h=>h<6).length >= 3 ? 'Poor sleep this week — reduce volume by 1 set per exercise' : ''}
+WEEK ${selectedWeek} FEEDBACK:
+- Week rating: ${checkinData.weekRating}
+- Energy: ${checkinData.energyLevel}/5
+- Pain notes: ${checkinData.newPain || 'none'}
+- Extra notes: ${checkinData.notes || 'none'}
+- Heart rate context: ${hrData ? `${hrData} BPM average/intense reading available` : 'not available'}
+- Sleep history: ${sleepHist.length ? sleepHist.join(', ') + ' hours' : 'not available'}
 
-EXERCISES TO FILL IN (keep these exact names):
-${nextScheduleSkeleton.map(d => `\n${d.label} (${d.id}):\n${d.exercises.map((ex,i) => `  ${i+1}. ${ex}`).join('\n')}`).join('')}
+PROGRAM RULES:
+- Keep the same day labels and the same number of exercises per day.
+- Prioritize fat loss, full-body coverage across the week, beginner-safe exercise selection, and balanced muscle coverage.
+- Week ${selectedWeek + 1} must be meaningfully different from Week ${selectedWeek}. Do not repeat the same day structure with the same exercise list.
+- Use AT MOST 1 carryover exercise from the previous week per day.
+- Each day must include AT LEAST the minimum number of new exercises specified below.
+- Choose exercise names ONLY from the allowed lists below.
+- If pain notes mention an area, avoid movements that heavily aggravate it.
+- For carried-over exercises, progress load by about ${weightMult.toFixed(3)}x when appropriate.
+- If week was too hard or recovery is poor, keep loads conservative and reduce difficulty slightly.
 
-Return ONLY this JSON (no markdown):
+ALLOWED EXERCISES BY DAY:
+${dayConfigs.map(day => `\n${day.label} (${day.id})
+- Previous week exercises: ${day.currentExercises.join(', ')}
+- Carryover allowed (max 1): ${day.carryoverOptions.join(', ') || 'none'}
+- Minimum new exercises required: ${day.requiredNewCount}
+- Allowed exercise pool: ${day.availableOptions.join(', ')}`).join('\n')}
+
+${retryFeedback ? `VALIDATION FEEDBACK FROM LAST ATTEMPT:\n${retryFeedback}\n` : ''}
+
+Return ONLY valid JSON in this shape:
 {
   "schedule": [
     {
       "id": "day1",
       "label": "Upper Body Push",
       "warmup": [{"name": "string", "duration": "string"}],
-      "exercises": [{"name": "EXACT name from list above", "sets": 3, "reps": "8-12", "rest": "90s", "weight": "22.5kg", "guide": "form cue"}],
+      "exercises": [
+        {"name": "exercise name from allowed pool", "sets": 3, "reps": "8-12", "rest": "90s", "weight": "22.5kg", "guide": "form cue"}
+      ],
       "cooldown": [{"name": "string", "duration": "string"}]
     }
   ]
 }`;
 
-      const result = await model.generateContent(prompt);
-      let nextWeekPlan = JSON.parse(result.response.text().replace(/```json/g, '').replace(/```/g, '').trim());
+      const validateGeneratedPlan = (candidatePlan) => {
+        const issues = [];
+        const generatedDays = Array.isArray(candidatePlan?.schedule) ? candidatePlan.schedule : [];
 
-      // Enforce the preselected schedule so AI can only fill in training details.
-      nextWeekPlan.schedule = nextScheduleSkeleton.map((day, dayIndex) => {
+        if (generatedDays.length !== dayConfigs.length) {
+          issues.push(`Expected ${dayConfigs.length} days but got ${generatedDays.length}.`);
+          return issues;
+        }
+
+        dayConfigs.forEach((dayConfig, dayIndex) => {
+          const generatedDay = generatedDays[dayIndex];
+          const generatedExercises = Array.isArray(generatedDay?.exercises) ? generatedDay.exercises : [];
+          const allowedNormalized = new Set(dayConfig.availableOptions.map(normalizeExerciseName));
+          const carryoverNormalized = new Set(dayConfig.carryoverOptions.map(normalizeExerciseName));
+          const currentNormalized = new Set(dayConfig.currentExercises.map(normalizeExerciseName));
+
+          if (generatedDay?.id !== dayConfig.id) {
+            issues.push(`${dayConfig.label} should use id ${dayConfig.id}.`);
+          }
+          if (generatedDay?.label !== dayConfig.label) {
+            issues.push(`${dayConfig.id} should keep label "${dayConfig.label}".`);
+          }
+          if (generatedExercises.length !== dayConfig.currentExercises.length) {
+            issues.push(`${dayConfig.label} should have ${dayConfig.currentExercises.length} exercises.`);
+            return;
+          }
+
+          const seen = new Set();
+          let carryoverCount = 0;
+          let newCount = 0;
+
+          generatedExercises.forEach((exercise, exerciseIndex) => {
+            const name = exercise?.name || '';
+            const normalized = normalizeExerciseName(name);
+
+            if (!allowedNormalized.has(normalized)) {
+              issues.push(`${dayConfig.label} exercise ${exerciseIndex + 1} uses disallowed movement "${name}".`);
+            }
+            if (seen.has(normalized)) {
+              issues.push(`${dayConfig.label} repeats "${name}" within the same day.`);
+            }
+            seen.add(normalized);
+
+            if (carryoverNormalized.has(normalized)) carryoverCount += 1;
+            if (!currentNormalized.has(normalized)) newCount += 1;
+          });
+
+          if (carryoverCount > 1) {
+            issues.push(`${dayConfig.label} has more than 1 carryover exercise from last week.`);
+          }
+          if (newCount < dayConfig.requiredNewCount) {
+            issues.push(`${dayConfig.label} needs at least ${dayConfig.requiredNewCount} new exercises but only has ${newCount}.`);
+          }
+        });
+
+        return issues;
+      };
+
+      let nextWeekPlan = null;
+      let rawResponseText = '';
+      let lastIssues = [];
+
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        const result = await model.generateContent(buildPrompt(lastIssues.join('\n')));
+        rawResponseText = result.response.text().replace(/```json/g, '').replace(/```/g, '').trim();
+        const candidatePlan = JSON.parse(rawResponseText);
+        const issues = validateGeneratedPlan(candidatePlan);
+
+        if (issues.length === 0) {
+          nextWeekPlan = candidatePlan;
+          break;
+        }
+
+        lastIssues = issues;
+        console.warn('Week generation validation failed:', { attempt: attempt + 1, issues, rawResponseText });
+      }
+
+      if (!nextWeekPlan) {
+        throw new Error(`AI returned an invalid week plan. ${lastIssues.join(' ')}`.trim());
+      }
+
+      nextWeekPlan.schedule = dayConfigs.map((day, dayIndex) => {
         const generatedDay = nextWeekPlan.schedule?.[dayIndex] || {};
         const generatedExercises = Array.isArray(generatedDay.exercises) ? generatedDay.exercises : [];
 
         return {
           id: day.id,
           label: day.label,
-          warmup: day.warmup,
-          cooldown: day.cooldown,
-          exercises: day.exercises.map((exerciseName, exerciseIndex) => {
-            const generatedExercise = generatedExercises[exerciseIndex] || {};
-            const fallbackWeight = lastWeekWeights[exerciseName] || 'Start: 10kg';
+          warmup: Array.isArray(generatedDay.warmup) && generatedDay.warmup.length ? generatedDay.warmup : day.warmup,
+          cooldown: Array.isArray(generatedDay.cooldown) && generatedDay.cooldown.length ? generatedDay.cooldown : day.cooldown,
+          exercises: generatedExercises.map((generatedExercise) => {
+            const fallbackWeight = lastWeekWeights[generatedExercise.name] || 'Start: 10kg';
 
             return {
-              name: exerciseName,
+              name: generatedExercise.name,
               sets: generatedExercise.sets ?? 3,
               reps: generatedExercise.reps || '8-12',
               rest: generatedExercise.rest || '90s',
