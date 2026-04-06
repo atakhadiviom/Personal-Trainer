@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './index.css';
 
-import { auth, db } from './firebase';
+import { auth, db, firebaseMissingEnvKeys, firebaseSetupError } from './firebase';
 import { onAuthStateChanged, signOut, getRedirectResult } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
@@ -42,6 +42,11 @@ function App() {
 
   // Auth listener + load saved data
   useEffect(() => {
+    if (firebaseSetupError || !auth || !db) {
+      setAuthLoading(false);
+      return undefined;
+    }
+
     // Must await getRedirectResult FIRST so Firebase processes the OAuth redirect
     // before onAuthStateChanged fires — otherwise it fires with null and shows login
     getRedirectResult(auth).catch(() => {});
@@ -141,6 +146,42 @@ function App() {
     return (
       <div className="loading-screen">
         <div className="gradient-text" style={{ fontSize: '2rem', fontFamily: 'Outfit' }}>Initializing...</div>
+      </div>
+    );
+  }
+
+  if (firebaseSetupError) {
+    return (
+      <div className="loading-screen" style={{ padding: '24px' }}>
+        <div
+          className="glass section-card"
+          style={{ maxWidth: '720px', width: '100%', padding: '32px', textAlign: 'left' }}
+        >
+          <h1 className="super-title" style={{ fontSize: '2rem', marginBottom: '12px' }}>
+            Firebase setup required
+          </h1>
+          <p className="step-subtitle" style={{ marginBottom: '16px' }}>
+            The app could not start because the local Vite environment is missing Firebase configuration.
+          </p>
+          <p style={{ color: 'var(--text-dim)', marginBottom: '16px' }}>
+            Copy <code>.env.example</code> to <code>.env</code> and fill in these values:
+          </p>
+          <pre
+            style={{
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+              background: 'rgba(0, 0, 0, 0.35)',
+              borderRadius: '12px',
+              padding: '16px',
+              marginBottom: '16px'
+            }}
+          >
+            {firebaseMissingEnvKeys.join('\n')}
+          </pre>
+          <p style={{ color: 'var(--text-secondary)', margin: 0 }}>
+            After updating <code>.env</code>, restart the dev server.
+          </p>
+        </div>
       </div>
     );
   }
