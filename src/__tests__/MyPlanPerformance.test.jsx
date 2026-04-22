@@ -74,8 +74,6 @@ describe('MyPlan Performance Optimization', () => {
     await new Promise(r => setTimeout(r, 1500));
 
     // Wait for updateDoc to be called
-    console.log(`Number of updateDoc calls: ${updateDoc.mock.calls.length}`);
-
     // Test the expected debounced behaviour - expecting exactly 1 updateDoc call
     expect(updateDoc.mock.calls.length).toBe(1);
 
