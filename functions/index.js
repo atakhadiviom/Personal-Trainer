@@ -69,15 +69,18 @@ exports.generateNovaFitPlan = onCall(async (request) => {
     }
   };
 
+  const systemInstruction = `You are a professional, aggressive AI Gym Trainer. Create an exact, structured 4-day workout schedule with exact weights to start with, warmups, and cool-downs. Return only valid JSON.`;
+
   const model = genAI.getGenerativeModel({
     model: "gemini-2.0-flash",
+    systemInstruction,
     generationConfig: {
       responseMimeType: "application/json",
       responseSchema: schema,
     }
   });
 
-  const prompt = `You are a professional, aggressive AI Gym Trainer. Create a highly specific 12-week plan for a ${formData.age}yo ${formData.gender}, ${formData.weight}kg, ${formData.height}cm. Goal: ${formData.goal}. Limitations: ${formData.problems}. Gym: ${formData.gymName}. Create an exact, structured 4-day workout schedule with exact weights to start with, warmups, and cool-downs. Return only valid JSON.`;
+  const prompt = `Create a highly specific 12-week plan for a ${formData.age}yo ${formData.gender}, ${formData.weight}kg, ${formData.height}cm. Goal: ${formData.goal}. Limitations: ${formData.problems}. Gym: ${formData.gymName}.`;
 
   try {
     const result = await model.generateContent(prompt);
