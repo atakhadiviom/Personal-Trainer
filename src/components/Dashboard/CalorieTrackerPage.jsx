@@ -211,137 +211,36 @@ Be accurate. Use standard serving sizes if the user doesn't specify amounts. All
 
   return (
     <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 140px)' }}>
-      {/* Macro Rings */}
-      <div className="section-card" style={{ borderTop: '4px solid var(--accent-green)', flexShrink: 0 }}>
-        <div className="section-header"><h3 style={{ color: 'var(--accent-green)' }}>🔥 Today — {today}</h3></div>
-        <div className="macro-rings">
-          <MacroRing label="Calories" current={totalCals} target={finalTargetCals} color="var(--accent-orange)" unit="kcal" />
-          <MacroRing label="Protein" current={totalPro} target={targetPro} color="var(--accent-green)" unit="g" />
-          <MacroRing label="Carbs" current={totalCarbs} target={targetCarbs} color="var(--accent-cyan)" unit="g" />
-          <MacroRing label="Fat" current={totalFat} target={targetFat} color="var(--accent-purple)" unit="g" />
-        </div>
-        {/* Feature 1: Step calorie sync */}
-        {fitSteps != null && fitSteps > 0 && (
-          <div style={{ padding: '8px 16px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>🚶 Steps bonus</span>
-            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#e8a838' }}>+{Math.round(fitSteps * 0.04)} kcal from {fitSteps.toLocaleString()} steps</span>
-          </div>
-        )}
-        {/* Feature 4: Smart hydration target */}
-        <div style={{ padding: '8px 16px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>💧 Hydration goal</span>
-          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--accent-blue)' }}>{(fitCalsBurned || 0) > 500 ? '3.0' : '2.5'}L today{(fitCalsBurned || 0) > 500 ? ' (+0.5L for activity)' : ''}</span>
-        </div>
-        {/* Feature 11: Plateau alert */}
-        {plateauAlert && (
-          <div style={{ padding: '10px 16px', borderTop: '1px solid rgba(232,168,56,0.3)', background: 'rgba(232,168,56,0.06)', borderRadius: '0 0 var(--r-md) var(--r-md)' }}>
-            <span style={{ fontSize: '0.82rem', color: '#e8a838' }}>📊 Plateau Alert — You've been at target calories for 7 days. Consider a 200 kcal reduction or a refeed day.</span>
-          </div>
-        )}
-      </div>
+      <MacroRingsSection
+        today={today}
+        totalCals={totalCals}
+        finalTargetCals={finalTargetCals}
+        totalPro={totalPro}
+        targetPro={targetPro}
+        totalCarbs={totalCarbs}
+        targetCarbs={targetCarbs}
+        totalFat={totalFat}
+        targetFat={targetFat}
+        fitSteps={fitSteps}
+        fitCalsBurned={fitCalsBurned}
+        plateauAlert={plateauAlert}
+      />
 
-      {/* Today's Log */}
-      {entries.length > 0 && (
-        <div style={{
-          background: 'rgba(255,255,255,0.04)',
-          border: '1px solid var(--border-card)',
-          borderRadius: '8px',
-          padding: '8px 12px',
-          margin: '12px 0',
-          flexShrink: 0
-        }}>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
-            Today's Log
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {entries.map((entry, index) => (
-              <div key={index} style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                fontSize: '0.85rem'
-              }}>
-                <span style={{ fontWeight: '600', color: 'var(--text-primary)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {entry.meal}
-                </span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, marginLeft: '8px' }}>
-                  <span style={{ color: 'var(--text-dim)', fontSize: '0.8rem' }}>
-                    {entry.cals || 0} kcal • P:{entry.pro || 0}g C:{entry.carbs || 0}g F:{entry.fat || 0}g
-                  </span>
-                  <button
-                    onClick={() => handleDeleteEntry(index)}
-                    aria-label={`Delete ${entry.meal}`}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#ff6b6b',
-                      cursor: 'pointer',
-                      fontSize: '1rem',
-                      padding: '0 2px',
-                      lineHeight: '1',
-                      flexShrink: 0
-                    }}
-                  >
-                    🗑️
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      <DailyLog entries={entries} handleDeleteEntry={handleDeleteEntry} />
 
-      {/* Chat Area */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 0', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        {error && <div className="alert-box alert-warning" style={{ margin: '0 16px' }}>{error}</div>}
-        {messages.map((msg, i) => (
-          <div key={i} style={{
-            alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
-            maxWidth: '85%',
-            padding: '12px 16px',
-            borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-            background: msg.role === 'user' ? 'var(--accent-cyan)' : 'rgba(255,255,255,0.06)',
-            color: msg.role === 'user' ? '#000' : 'var(--text-primary)',
-            fontSize: '0.9rem',
-            lineHeight: '1.5',
-            whiteSpace: 'pre-wrap',
-            border: msg.role === 'ai' ? '1px solid var(--border)' : 'none'
-          }}>
-            {msg.role === 'ai' && <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', display: 'block', marginBottom: '4px' }}>NovaFit AI</span>}
-            {msg.text.split('**').map((part, j) => j % 2 === 1 ? <strong key={j}>{part}</strong> : part)}
-          </div>
-        ))}
-        {loading && (
-          <div style={{
-            alignSelf: 'flex-start',
-            padding: '12px 16px',
-            borderRadius: '16px 16px 16px 4px',
-            background: 'rgba(255,255,255,0.06)',
-            border: '1px solid var(--border)',
-            color: 'var(--text-dim)',
-            fontSize: '0.9rem'
-          }}>
-            <span style={{ animation: 'pulse-glow 1.5s infinite' }}>🧠 Analyzing your food...</span>
-          </div>
-        )}
-        <div ref={chatEndRef} />
-      </div>
+      <ChatArea
+        error={error}
+        messages={messages}
+        loading={loading}
+        chatEndRef={chatEndRef}
+      />
 
-      {/* Input Bar */}
-      <form onSubmit={handleSend} style={{
-        display: 'flex', gap: '8px', padding: '12px 0', borderTop: '1px solid var(--border)', flexShrink: 0
-      }}>
-        <input
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          placeholder="I just had 2 eggs and toast with butter..."
-          disabled={loading}
-          style={{ flex: 1, fontSize: '0.95rem' }}
-        />
-        <button type="submit" className="btn-primary" disabled={loading || !input.trim()} style={{ padding: '12px 20px', whiteSpace: 'nowrap' }}>
-          {loading ? '...' : '📤 Send'}
-        </button>
-      </form>
+      <InputBar
+        input={input}
+        setInput={setInput}
+        loading={loading}
+        handleSend={handleSend}
+      />
     </div>
   );
 };
@@ -365,6 +264,163 @@ const MacroRing = ({ label, current, target, color, unit }) => {
       </svg>
       <span className="macro-ring-label">{label}</span>
     </div>
+  );
+};
+
+const MacroRingsSection = ({
+  today,
+  totalCals,
+  finalTargetCals,
+  totalPro,
+  targetPro,
+  totalCarbs,
+  targetCarbs,
+  totalFat,
+  targetFat,
+  fitSteps,
+  fitCalsBurned,
+  plateauAlert
+}) => {
+  return (
+    <div className="section-card" style={{ borderTop: '4px solid var(--accent-green)', flexShrink: 0 }}>
+      <div className="section-header"><h3 style={{ color: 'var(--accent-green)' }}>🔥 Today — {today}</h3></div>
+      <div className="macro-rings">
+        <MacroRing label="Calories" current={totalCals} target={finalTargetCals} color="var(--accent-orange)" unit="kcal" />
+        <MacroRing label="Protein" current={totalPro} target={targetPro} color="var(--accent-green)" unit="g" />
+        <MacroRing label="Carbs" current={totalCarbs} target={targetCarbs} color="var(--accent-cyan)" unit="g" />
+        <MacroRing label="Fat" current={totalFat} target={targetFat} color="var(--accent-purple)" unit="g" />
+      </div>
+      {/* Feature 1: Step calorie sync */}
+      {fitSteps != null && fitSteps > 0 && (
+        <div style={{ padding: '8px 16px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>🚶 Steps bonus</span>
+          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#e8a838' }}>+{Math.round(fitSteps * 0.04)} kcal from {fitSteps.toLocaleString()} steps</span>
+        </div>
+      )}
+      {/* Feature 4: Smart hydration target */}
+      <div style={{ padding: '8px 16px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>💧 Hydration goal</span>
+        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--accent-blue)' }}>{(fitCalsBurned || 0) > 500 ? '3.0' : '2.5'}L today{(fitCalsBurned || 0) > 500 ? ' (+0.5L for activity)' : ''}</span>
+      </div>
+      {/* Feature 11: Plateau alert */}
+      {plateauAlert && (
+        <div style={{ padding: '10px 16px', borderTop: '1px solid rgba(232,168,56,0.3)', background: 'rgba(232,168,56,0.06)', borderRadius: '0 0 var(--r-md) var(--r-md)' }}>
+          <span style={{ fontSize: '0.82rem', color: '#e8a838' }}>📊 Plateau Alert — You've been at target calories for 7 days. Consider a 200 kcal reduction or a refeed day.</span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const DailyLog = ({ entries, handleDeleteEntry }) => {
+  if (entries.length === 0) return null;
+
+  return (
+    <div style={{
+      background: 'rgba(255,255,255,0.04)',
+      border: '1px solid var(--border-card)',
+      borderRadius: '8px',
+      padding: '8px 12px',
+      margin: '12px 0',
+      flexShrink: 0
+    }}>
+      <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
+        Today's Log
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        {entries.map((entry, index) => (
+          <div key={index} style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            fontSize: '0.85rem'
+          }}>
+            <span style={{ fontWeight: '600', color: 'var(--text-primary)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {entry.meal}
+            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, marginLeft: '8px' }}>
+              <span style={{ color: 'var(--text-dim)', fontSize: '0.8rem' }}>
+                {entry.cals || 0} kcal • P:{entry.pro || 0}g C:{entry.carbs || 0}g F:{entry.fat || 0}g
+              </span>
+              <button
+                onClick={() => handleDeleteEntry(index)}
+                aria-label={`Delete ${entry.meal}`}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#ff6b6b',
+                  cursor: 'pointer',
+                  fontSize: '1rem',
+                  padding: '0 2px',
+                  lineHeight: '1',
+                  flexShrink: 0
+                }}
+              >
+                🗑️
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const ChatArea = ({ error, messages, loading, chatEndRef }) => {
+  return (
+    <div style={{ flex: 1, overflowY: 'auto', padding: '16px 0', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      {error && <div className="alert-box alert-warning" style={{ margin: '0 16px' }}>{error}</div>}
+      {messages.map((msg, i) => (
+        <div key={i} style={{
+          alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
+          maxWidth: '85%',
+          padding: '12px 16px',
+          borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+          background: msg.role === 'user' ? 'var(--accent-cyan)' : 'rgba(255,255,255,0.06)',
+          color: msg.role === 'user' ? '#000' : 'var(--text-primary)',
+          fontSize: '0.9rem',
+          lineHeight: '1.5',
+          whiteSpace: 'pre-wrap',
+          border: msg.role === 'ai' ? '1px solid var(--border)' : 'none'
+        }}>
+          {msg.role === 'ai' && <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', display: 'block', marginBottom: '4px' }}>NovaFit AI</span>}
+          {msg.text.split('**').map((part, j) => j % 2 === 1 ? <strong key={j}>{part}</strong> : part)}
+        </div>
+      ))}
+      {loading && (
+        <div style={{
+          alignSelf: 'flex-start',
+          padding: '12px 16px',
+          borderRadius: '16px 16px 16px 4px',
+          background: 'rgba(255,255,255,0.06)',
+          border: '1px solid var(--border)',
+          color: 'var(--text-dim)',
+          fontSize: '0.9rem'
+        }}>
+          <span style={{ animation: 'pulse-glow 1.5s infinite' }}>🧠 Analyzing your food...</span>
+        </div>
+      )}
+      <div ref={chatEndRef} />
+    </div>
+  );
+};
+
+const InputBar = ({ input, setInput, loading, handleSend }) => {
+  return (
+    <form onSubmit={handleSend} style={{
+      display: 'flex', gap: '8px', padding: '12px 0', borderTop: '1px solid var(--border)', flexShrink: 0
+    }}>
+      <input
+        value={input}
+        onChange={e => setInput(e.target.value)}
+        placeholder="I just had 2 eggs and toast with butter..."
+        disabled={loading}
+        style={{ flex: 1, fontSize: '0.95rem' }}
+      />
+      <button type="submit" className="btn-primary" disabled={loading || !input.trim()} style={{ padding: '12px 20px', whiteSpace: 'nowrap' }}>
+        {loading ? '...' : '📤 Send'}
+      </button>
+    </form>
   );
 };
 
