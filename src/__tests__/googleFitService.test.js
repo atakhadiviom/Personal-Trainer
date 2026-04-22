@@ -48,6 +48,36 @@ describe('googleFitService', () => {
     });
   });
 
+  describe('getSteps', () => {
+    it('returns step count when data exists', async () => {
+      localStorageMock.setItem('gfit_token', 'tok');
+      localStorageMock.setItem('gfit_token_exp', String(Date.now() + 3600000));
+      global.fetch.mockResolvedValueOnce({
+        status: 200,
+        json: async () => ({
+          bucket: [
+            { dataset: [{ point: [{ value: [{ intVal: 10500 }] }] }] }
+          ]
+        })
+      });
+      const { getSteps } = await import('../utils/googleFitService');
+      const result = await getSteps();
+      expect(result).toBe(10500);
+    });
+
+    it('returns null when no step data', async () => {
+      localStorageMock.setItem('gfit_token', 'tok');
+      localStorageMock.setItem('gfit_token_exp', String(Date.now() + 3600000));
+      global.fetch.mockResolvedValueOnce({
+        status: 200,
+        json: async () => ({ bucket: [{ dataset: [{ point: [] }] }] })
+      });
+      const { getSteps } = await import('../utils/googleFitService');
+      const result = await getSteps();
+      expect(result).toBeNull();
+    });
+  });
+
   describe('get7DayStepAverage', () => {
     it('returns average of non-zero days', async () => {
       localStorageMock.setItem('gfit_token', 'tok');
