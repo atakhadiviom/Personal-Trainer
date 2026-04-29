@@ -90,7 +90,7 @@ exports.generateNovaFitPlan = onCall(async (request) => {
 /**
  * Daily Workout Nudge (Runs every morning at 8:00 AM)
  */
-exports.dailyWorkoutNudge = onSchedule("0 8 * * *", async (event) => {
+exports.dailyWorkoutNudge = onSchedule("0 8 * * *", async () => {
   const usersSnapshot = await admin.firestore().collection('users').get();
   const tokens = [];
   
@@ -114,22 +114,46 @@ exports.dailyWorkoutNudge = onSchedule("0 8 * * *", async (event) => {
 /**
  * Weekly Photo Accountability Nudge (Runs every Sunday at 9:00 AM)
  */
-exports.weeklyPhotoNudge = onSchedule("0 9 * * 0", async (event) => {
-  const usersSnapshot = await admin.firestore().collection('users').get();
-  const tokens = [];
-  usersSnapshot.forEach(doc => {
-    const data = doc.data();
-    if (data.fcmToken) tokens.push(data.fcmToken);
-  });
+exports.weeklyPhotoNudge = onSchedule("0 9 * * 0", async () => {
+  const usersRef = admin.firestore().collection('users');
+  const limit = 500;
+  let lastVisible = null;
+  let hasMore = true;
 
-  if (tokens.length > 0) {
-    const message = {
-      notification: {
-        title: "📸 Progress Check-in!",
-        body: "A new week begins tomorrow. Snap your weekly full-body photo to track your transformation."
-      },
-      tokens: tokens
-    };
-    await admin.messaging().sendMulticast(message);
+  while (hasMore) {
+    let query = usersRef.orderBy(admin.firestore.FieldPath.documentId()).limit(limit);
+    if (lastVisible) {
+      query = query.startAfter(lastVisible);
+    }
+
+    const snapshot = await query.get();
+
+    if (snapshot.empty) {
+      hasMore = false;
+      break;
+    }
+
+    lastVisible = snapshot.docs[snapshot.docs.length - 1];
+
+    const tokens = [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      if (data.fcmToken) tokens.push(data.fcmToken);
+    });
+
+    if (tokens.length > 0) {
+      const message = {
+        notification: {
+          title: "📸 Progress Check-in!",
+          body: "A new week begins tomorrow. Snap your weekly full-body photo to track your transformation."
+        },
+        tokens: tokens
+      };
+      await admin.messaging().sendMulticast(message);
+    }
+
+    if (snapshot.docs.length < limit) {
+      hasMore = false;
+    }
   }
 });
