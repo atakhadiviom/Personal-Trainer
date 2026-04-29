@@ -61,13 +61,6 @@ const exerciseDB = {
   ]
 };
 
-const injurySwaps = {
-  back: ["Leg Press Machine", "Cable Chest Fly", "Machine Chest Press", "Leg Extension"],
-  knees: ["Hip Thrust (Barbell)", "Lying Leg Curls", "Calf Raises (Machine)", "Glute Bridges"],
-  shoulders: ["Lat Pulldown Machine", "Leg Press Machine", "Seated Cable Row", "Bicep Barbell Curls"],
-  wrists: ["Machine Chest Press", "Leg Press Machine", "Leg Extension", "Cable Chest Fly"],
-  neck: ["Machine Chest Press", "Leg Press Machine", "Leg Extension", "Seated Cable Row"]
-};
 
 function pickRandom(arr, count) {
   const shuffled = [...arr].sort(() => 0.5 - Math.random());
@@ -93,7 +86,6 @@ export const generateAIGymPlan = (formData) => {
   const dietControl = formData.dietControl || 'moderate';
   const sleep = formData.sleepHours || '7to8';
   const env = formData.trainingEnv || 'full_gym';
-  const targetW = parseInt(formData.targetWeight) || weight;
 
   // BMR (Mifflin-St Jeor)
   const bmr = isMale
@@ -186,9 +178,8 @@ export const generateAIGymPlan = (formData) => {
 
     // Filter out exercises that stress injured areas
     if (injuries.length > 0) {
-      const safeNames = injuries.flatMap(inj => injurySwaps[inj] || []);
       // Keep only exercises that are in the safe list or not in any injury category
-      pool = pool.filter(ex => {
+      pool = pool.filter(() => {
         // Simple heuristic: if exercise exists in safeNames, keep it
         return true; // Keep all for now, the AI would handle real filtering
       });
