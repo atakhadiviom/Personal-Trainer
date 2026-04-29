@@ -146,6 +146,42 @@ export const get7DayStepAverage = async () => {
   return days > 0 ? Math.round(total / days) : null;
 };
 
+const partition = (arr, left, right) => {
+  const mid = Math.floor((left + right) / 2);
+  let temp = arr[mid];
+  arr[mid] = arr[right];
+  arr[right] = temp;
+
+  const pivot = arr[right];
+  let i = left;
+  for (let j = left; j < right; j++) {
+    if (arr[j] < pivot) {
+      temp = arr[i];
+      arr[i] = arr[j];
+      arr[j] = temp;
+      i++;
+    }
+  }
+  temp = arr[i];
+  arr[i] = arr[right];
+  arr[right] = temp;
+  return i;
+};
+
+const quickselect = (arr, k, left = 0, right = arr.length - 1) => {
+  while (left < right) {
+    let pivotIndex = partition(arr, left, right);
+    if (pivotIndex === k) {
+      return arr[k];
+    } else if (pivotIndex < k) {
+      left = pivotIndex + 1;
+    } else {
+      right = pivotIndex - 1;
+    }
+  }
+  return arr[k];
+};
+
 // Resting heart rate = 20th percentile of today's HR readings
 export const getRestingHeartRate = async () => {
   const startNs = new Date().setHours(0, 0, 0, 0) * 1000000;
@@ -155,9 +191,9 @@ export const getRestingHeartRate = async () => {
   );
   const points = data.point || [];
   if (!points.length) return null;
-  const sorted = points.map(p => p.value[0].fpVal).sort((a, b) => a - b);
-  const idx = Math.floor(sorted.length * 0.2);
-  return Math.round(sorted[idx]);
+  const values = points.map(p => p.value[0].fpVal);
+  const idx = Math.floor(values.length * 0.2);
+  return Math.round(quickselect(values, idx));
 };
 
 // Sleep history: last 7 days array of { date: 'YYYY-MM-DD', hours: float }
