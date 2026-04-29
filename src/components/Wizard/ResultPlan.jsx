@@ -1,6 +1,7 @@
 import React from 'react';
+import { getSafeYoutubeUrl } from '../../utils/url';
 
-const ResultPlan = ({ formData, aiPlan, resetApp }) => {
+const ResultPlan = ({ aiPlan, resetApp }) => {
   if (!aiPlan) return null;
 
   return (
@@ -122,7 +123,7 @@ const ResultPlan = ({ formData, aiPlan, resetApp }) => {
                                         <td className="ex-guide"><small>{ex.guide}</small></td>
                                         <td className="ex-action">
                                             <a 
-                                              href={`https://www.youtube.com/results?search_query=how+to+properly+do+${encodeURIComponent(ex.name)}`} 
+                                              href={getSafeYoutubeUrl(ex.name, 'how to properly do')}
                                               target="_blank" 
                                               rel="noreferrer"
                                               className="btn-yt"
