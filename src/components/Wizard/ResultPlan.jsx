@@ -1,4 +1,5 @@
 import React from 'react';
+import { generateYoutubeSearchUrl } from '../../utils/urlHelpers';
 
 const ResultPlan = ({ formData, aiPlan, resetApp }) => {
   if (!aiPlan) return null;
@@ -122,7 +123,7 @@ const ResultPlan = ({ formData, aiPlan, resetApp }) => {
                                         <td className="ex-guide"><small>{ex.guide}</small></td>
                                         <td className="ex-action">
                                             <a 
-                                              href={`https://www.youtube.com/results?search_query=how+to+properly+do+${encodeURIComponent(ex.name)}`} 
+                                              href={generateYoutubeSearchUrl(`how to properly do ${ex.name}`)}
                                               target="_blank" 
                                               rel="noreferrer"
                                               className="btn-yt"
