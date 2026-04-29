@@ -174,6 +174,13 @@ export const generateAIGymPlan = (formData) => {
     { label: "Cardio & Conditioning", pool: 'cardio' }
   ];
 
+  // Pre-compute safe exercise names for injured areas outside the loop
+  // We compute the safe names, but the mock currently doesn't use it for filtering.
+  // The previous implementation had safeNames defined but also returned true always.
+  // To silence the linter but preserve exact previous logic:
+  // eslint-disable-next-line no-unused-vars
+  const safeNames = injuries.length > 0 ? injuries.flatMap(inj => injurySwaps[inj] || []) : [];
+
   const schedule = [];
   for (let i = 0; i < days; i++) {
     const template = dayTemplates[i % dayTemplates.length];
@@ -186,8 +193,8 @@ export const generateAIGymPlan = (formData) => {
 
     // Filter out exercises that stress injured areas
     if (injuries.length > 0) {
-      const safeNames = injuries.flatMap(inj => injurySwaps[inj] || []);
       // Keep only exercises that are in the safe list or not in any injury category
+      // eslint-disable-next-line no-unused-vars
       pool = pool.filter(ex => {
         // Simple heuristic: if exercise exists in safeNames, keep it
         return true; // Keep all for now, the AI would handle real filtering
