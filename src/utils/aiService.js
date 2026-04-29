@@ -58,9 +58,29 @@ Return EXACTLY this JSON format. No markdown, no backticks, pure JSON only:
 
   const result = await model.generateContent(prompt);
   let text = result.response.text();
-  // Safely trim markdown if returned
-  text = text.replace(/```json/g, '').replace(/```/g, '').trim();
-  const generated = JSON.parse(text);
+  // Securely extract JSON block
+  const firstBrace = text.indexOf('{');
+  const lastBrace = text.lastIndexOf('}');
+
+  if (firstBrace === -1 || lastBrace === -1) {
+    throw new Error('Invalid response format: Missing JSON block');
+  }
+
+  const jsonString = text.substring(firstBrace, lastBrace + 1);
+  let generated;
+  try {
+    generated = JSON.parse(jsonString);
+  } catch (err) {
+    throw new Error('Invalid JSON format');
+  }
+
+  // Schema validation
+  const requiredKeys = ['overview', 'nutrition', 'progression', 'workout', 'mindset'];
+  const missingKeys = requiredKeys.filter(key => !(key in generated));
+
+  if (missingKeys.length > 0) {
+    throw new Error('Invalid JSON schema: Missing keys - ' + missingKeys.join(', '));
+  }
 
   return generated;
 };
