@@ -134,4 +134,44 @@ describe('googleFitService', () => {
       expect(result[0].date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     });
   });
+
+  describe('getCaloriesBurned', () => {
+    it('returns rounded calories burned', async () => {
+      localStorageMock.setItem('gfit_token', 'tok');
+      localStorageMock.setItem('gfit_token_exp', String(Date.now() + 3600000));
+      global.fetch.mockResolvedValueOnce({
+        status: 200,
+        json: async () => ({
+          bucket: [{
+            dataset: [{
+              point: [{
+                value: [{ fpVal: 2050.6 }]
+              }]
+            }]
+          }]
+        })
+      });
+      const { getCaloriesBurned } = await import('../utils/googleFitService');
+      const result = await getCaloriesBurned();
+      expect(result).toBe(2051);
+    });
+
+    it('returns null when no calorie data is available', async () => {
+      localStorageMock.setItem('gfit_token', 'tok');
+      localStorageMock.setItem('gfit_token_exp', String(Date.now() + 3600000));
+      global.fetch.mockResolvedValueOnce({
+        status: 200,
+        json: async () => ({
+          bucket: [{
+            dataset: [{
+              point: []
+            }]
+          }]
+        })
+      });
+      const { getCaloriesBurned } = await import('../utils/googleFitService');
+      const result = await getCaloriesBurned();
+      expect(result).toBeNull();
+    });
+  });
 });
