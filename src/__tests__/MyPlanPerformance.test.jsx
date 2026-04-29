@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import MyPlan from '../components/Dashboard/MyPlan';
 import { updateDoc } from 'firebase/firestore';
 
@@ -64,17 +64,15 @@ describe('MyPlan Performance Optimization', () => {
     expect(checkboxes.length).toBe(5);
 
     // Rapidly toggle 5 checkboxes
-    fireEvent.click(checkboxes[0]);
-    fireEvent.click(checkboxes[1]);
-    fireEvent.click(checkboxes[2]);
-    fireEvent.click(checkboxes[3]);
-    fireEvent.click(checkboxes[4]);
+    await act(async () => {
+      fireEvent.click(checkboxes[0]);
+      fireEvent.click(checkboxes[1]);
+      fireEvent.click(checkboxes[2]);
+      fireEvent.click(checkboxes[3]);
+      fireEvent.click(checkboxes[4]);
 
-    // Wait some time to let debounce (if any) to trigger
-    await new Promise(r => setTimeout(r, 1500));
-
-    // Wait for updateDoc to be called
-    console.log(`Number of updateDoc calls: ${updateDoc.mock.calls.length}`);
+      await new Promise(r => setTimeout(r, 1500));
+    });
 
     // Test the expected debounced behaviour - expecting exactly 1 updateDoc call
     expect(updateDoc.mock.calls.length).toBe(1);
