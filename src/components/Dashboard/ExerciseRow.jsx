@@ -1,3 +1,4 @@
+import { generateYouTubeSearchUrl } from '../../utils/urlHelper.js';
 import React from 'react';
 
 const ExerciseRow = ({
@@ -38,7 +39,7 @@ const ExerciseRow = ({
       <td className="ex-rest">{ex.rest}</td>
       <td className="ex-weight">{ex.weight}</td>
       <td>
-        <a href={`https://www.youtube.com/results?search_query=how+to+${encodeURIComponent(ex.name)}`} target="_blank" rel="noreferrer" className="btn-yt">▶ Watch</a>
+        <a href={generateYouTubeSearchUrl(ex.name)} target="_blank" rel="noreferrer" className="btn-yt">▶ Watch</a>
       </td>
     </tr>
   );
