@@ -38,7 +38,18 @@ const ExerciseRow = ({
       <td className="ex-rest">{ex.rest}</td>
       <td className="ex-weight">{ex.weight}</td>
       <td>
-        <a href={`https://www.youtube.com/results?search_query=how+to+${encodeURIComponent(ex.name)}`} target="_blank" rel="noreferrer" className="btn-yt">▶ Watch</a>
+        <a
+          href={(() => {
+            const url = new URL('https://www.youtube.com/results');
+            url.searchParams.set('search_query', `how to ${ex.name}`);
+            return url.toString();
+          })()}
+          target="_blank"
+          rel="noreferrer"
+          className="btn-yt"
+        >
+          ▶ Watch
+        </a>
       </td>
     </tr>
   );
