@@ -48,6 +48,64 @@ describe('googleFitService', () => {
     });
   });
 
+  describe('getSteps', () => {
+    beforeEach(() => {
+      global.gapi = {
+        client: {
+          fitness: {
+            users: {
+              dataset: {
+                aggregate: vi.fn()
+              }
+            }
+          }
+        }
+      };
+    });
+
+    afterEach(() => {
+      delete global.gapi;
+    });
+
+    it('returns steps when step data exists', async () => {
+      localStorageMock.setItem('gfit_token', 'tok');
+      localStorageMock.setItem('gfit_token_exp', String(Date.now() + 3600000));
+      global.fetch.mockResolvedValueOnce({
+        status: 200,
+        json: async () => ({
+          bucket: [
+            { dataset: [{ point: [{ value: [{ intVal: 5000 }] }] }] }
+          ]
+        })
+      });
+      global.gapi.client.fitness.users.dataset.aggregate.mockResolvedValueOnce({
+        result: {
+          bucket: [
+            { dataset: [{ point: [{ value: [{ intVal: 5000 }] }] }] }
+          ]
+        }
+      });
+      const { getSteps } = await import('../utils/googleFitService');
+      const result = await getSteps();
+      expect(result).toBe(5000);
+    });
+
+    it('returns null when no step data', async () => {
+      localStorageMock.setItem('gfit_token', 'tok');
+      localStorageMock.setItem('gfit_token_exp', String(Date.now() + 3600000));
+      global.fetch.mockResolvedValueOnce({
+        status: 200,
+        json: async () => ({ bucket: [{ dataset: [{ point: [] }] }] })
+      });
+      global.gapi.client.fitness.users.dataset.aggregate.mockResolvedValueOnce({
+        result: { bucket: [{ dataset: [{ point: [] }] }] }
+      });
+      const { getSteps } = await import('../utils/googleFitService');
+      const result = await getSteps();
+      expect(result).toBeNull();
+    });
+  });
+
   describe('get7DayStepAverage', () => {
     it('returns average of non-zero days', async () => {
       localStorageMock.setItem('gfit_token', 'tok');
