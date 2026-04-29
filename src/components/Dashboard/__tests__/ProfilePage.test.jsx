@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ProfilePage from '../ProfilePage';
 import { auth } from '../../../firebase';
 import { signOut } from 'firebase/auth';
+import * as googleFit from '../../../utils/googleFitService';
 
 // Mock dependencies
 vi.mock('../../../firebase', () => ({
@@ -133,5 +134,21 @@ describe('ProfilePage', () => {
 
     expect(signOut).toHaveBeenCalledWith(auth);
     expect(signOut).toHaveBeenCalledTimes(1);
+  });
+
+  it('handles TDEE fetch error gracefully without crashing', async () => {
+    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    googleFit.getToken.mockReturnValue('mock-token');
+    googleFit.getWeeklyAverageCalories.mockRejectedValue(new Error('API failed'));
+
+    render(<ProfilePage formData={defaultFormData} resetWizard={mockResetWizard} />);
+
+    await waitFor(() => {
+      expect(consoleWarnSpy).toHaveBeenCalledWith('TDEE fetch error:', expect.any(Error));
+    });
+
+    expect(screen.getByText('Test User')).toBeInTheDocument();
+
+    consoleWarnSpy.mockRestore();
   });
 });
