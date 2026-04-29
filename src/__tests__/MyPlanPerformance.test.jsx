@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import MyPlan from '../components/Dashboard/MyPlan';
 import { updateDoc } from 'firebase/firestore';
 
@@ -70,14 +70,10 @@ describe('MyPlan Performance Optimization', () => {
     fireEvent.click(checkboxes[3]);
     fireEvent.click(checkboxes[4]);
 
-    // Wait some time to let debounce (if any) to trigger
-    await new Promise(r => setTimeout(r, 1500));
-
-    // Wait for updateDoc to be called
-    console.log(`Number of updateDoc calls: ${updateDoc.mock.calls.length}`);
-
-    // Test the expected debounced behaviour - expecting exactly 1 updateDoc call
-    expect(updateDoc.mock.calls.length).toBe(1);
+    // Wait for updateDoc to be called exactly once after debounce
+    await waitFor(() => {
+      expect(updateDoc.mock.calls.length).toBe(1);
+    }, { timeout: 2000 });
 
     // verify the final payload is correct
     const lastCall = updateDoc.mock.calls[0];
