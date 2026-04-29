@@ -26,12 +26,10 @@ const slides = [
 const Onboarding = ({ onFinish }) => {
   const [current, setCurrent] = useState(0);
   const [animating, setAnimating] = useState(false);
-  const [direction, setDirection] = useState(1); // 1 = forward
 
   const goNext = () => {
     if (animating) return;
     if (current === slides.length - 1) { onFinish(); return; }
-    setDirection(1);
     setAnimating(true);
     setTimeout(() => {
       setCurrent(c => c + 1);
