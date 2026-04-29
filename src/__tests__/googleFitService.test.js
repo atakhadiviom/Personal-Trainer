@@ -48,6 +48,56 @@ describe('googleFitService', () => {
     });
   });
 
+  describe('getCaloriesBurned', () => {
+    it('returns rounded calories when data is present', async () => {
+      localStorageMock.setItem('gfit_token', 'tok');
+      localStorageMock.setItem('gfit_token_exp', String(Date.now() + 3600000));
+      global.fetch.mockResolvedValueOnce({
+        status: 200,
+        json: async () => ({
+          bucket: [
+            {
+              dataset: [
+                {
+                  point: [
+                    {
+                      value: [{ fpVal: 2450.7 }]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        })
+      });
+      const { getCaloriesBurned } = await import('../utils/googleFitService');
+      const result = await getCaloriesBurned();
+      expect(result).toBe(2451);
+    });
+
+    it('returns null when no calorie data', async () => {
+      localStorageMock.setItem('gfit_token', 'tok');
+      localStorageMock.setItem('gfit_token_exp', String(Date.now() + 3600000));
+      global.fetch.mockResolvedValueOnce({
+        status: 200,
+        json: async () => ({
+          bucket: [
+            {
+              dataset: [
+                {
+                  point: []
+                }
+              ]
+            }
+          ]
+        })
+      });
+      const { getCaloriesBurned } = await import('../utils/googleFitService');
+      const result = await getCaloriesBurned();
+      expect(result).toBeNull();
+    });
+  });
+
   describe('get7DayStepAverage', () => {
     it('returns average of non-zero days', async () => {
       localStorageMock.setItem('gfit_token', 'tok');
