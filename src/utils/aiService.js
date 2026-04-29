@@ -58,8 +58,12 @@ Return EXACTLY this JSON format. No markdown, no backticks, pure JSON only:
 
   const result = await model.generateContent(prompt);
   let text = result.response.text();
-  // Safely trim markdown if returned
-  text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+  // Safely extract JSON based on boundaries to avoid altering string contents with backticks
+  const startIndex = text.indexOf('{');
+  const endIndex = text.lastIndexOf('}');
+  if (startIndex !== -1 && endIndex !== -1 && startIndex <= endIndex) {
+    text = text.substring(startIndex, endIndex + 1);
+  }
   const generated = JSON.parse(text);
 
   return generated;
