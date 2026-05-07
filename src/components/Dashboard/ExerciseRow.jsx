@@ -43,7 +43,7 @@ const ExerciseRow = memo(({
       </td>
     </tr>
   );
-};
+});
 
 export default ExerciseRow;
 // Named export for testing

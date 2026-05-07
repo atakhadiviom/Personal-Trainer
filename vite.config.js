@@ -28,9 +28,9 @@ export default defineConfig({
     sourcemap: 'hidden',
     rollupOptions: {
       output: {
-        manualChunks: {
-          firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/ai'],
-          recharts: ['recharts'],
+        manualChunks: (id) => {
+          if (id.includes('node_modules/firebase')) return 'firebase';
+          if (id.includes('node_modules/recharts')) return 'recharts';
         }
       }
     }
