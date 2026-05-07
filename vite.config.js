@@ -24,6 +24,17 @@ export default defineConfig({
       }
     })
   ],
+  build: {
+    sourcemap: 'hidden',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/ai'],
+          recharts: ['recharts'],
+        }
+      }
+    }
+  },
   test: {
     globals: true,
     environment: 'jsdom',

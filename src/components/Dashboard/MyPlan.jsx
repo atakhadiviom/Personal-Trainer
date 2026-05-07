@@ -53,12 +53,14 @@ const MyPlan = ({ formData, aiPlan }) => {
         if (hrs) {
           setSleepData(hrs);
           const numHrs = parseFloat(hrs);
-          const baseline = parseInt(localStorage.getItem('gfit_hr_baseline') || '0');
           const rhr = await googleFit.getRestingHeartRate();
+          // Only set baseline once — never overwrite so comparison stays meaningful (L4 fix)
+          const existingBaseline = localStorage.getItem('gfit_hr_baseline');
           if (rhr) {
             setRestingHR(rhr);
-            localStorage.setItem('gfit_hr_baseline', String(rhr));
+            if (!existingBaseline) localStorage.setItem('gfit_hr_baseline', String(rhr));
           }
+          const baseline = parseInt(existingBaseline || rhr || '0');
           const hrElevated = rhr && baseline && rhr > baseline * 1.10;
           if (hrElevated && numHrs < 6) {
             setReadinessColor('#ff6b6b');
@@ -183,7 +185,7 @@ const MyPlan = ({ formData, aiPlan }) => {
     setSwapping(swapKey);
     try {
       const model = getGenerativeModel(aiInstance, {
-        model: 'gemini-2.5-flash-lite',
+        model: 'gemini-3-flash-preview',
         generationConfig: { responseMimeType: 'application/json' }
       });
       const prompt = `You are a certified personal trainer. The client wants to swap "${exName}" for an alternative exercise that targets the EXACT same muscle group(s).
@@ -288,7 +290,7 @@ Return ONLY this JSON (no markdown):
       currentSchedule.forEach(d => d.exercises.forEach(e => { lastWeekWeights[e.name] = e.weight; }));
 
       const model = getGenerativeModel(aiInstance, {
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3-flash-preview',
         generationConfig: { responseMimeType: 'application/json' }
       });
 

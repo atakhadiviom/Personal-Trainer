@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import './index.css';
 
 import { auth, db, firebaseMissingEnvKeys, firebaseSetupError } from './firebase';
@@ -15,15 +15,22 @@ import StepGym from './components/Wizard/StepGym';
 import LoadingAI from './components/Wizard/LoadingAI';
 
 import Navbar from './components/Layout/Navbar';
-import MyPlan from './components/Dashboard/MyPlan';
-import CalorieTrackerPage from './components/Dashboard/CalorieTrackerPage';
-import ProfilePage from './components/Dashboard/ProfilePage';
-import HealthPage from './components/Dashboard/HealthPage';
+
+// Lazy-load heavy dashboard tabs — splits Firebase+Recharts into separate chunks
+const MyPlan = lazy(() => import('./components/Dashboard/MyPlan'));
+const CalorieTrackerPage = lazy(() => import('./components/Dashboard/CalorieTrackerPage'));
+const ProfilePage = lazy(() => import('./components/Dashboard/ProfilePage'));
+const HealthPage = lazy(() => import('./components/Dashboard/HealthPage'));
+
+const TabFallback = () => (
+  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '60px 0', color: 'var(--text-dim)' }}>
+    Loading...
+  </div>
+);
 
 function App() {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [view, setView] = useState('wizard'); // 'wizard' | 'dashboard'
   const [activeTab, setActiveTab] = useState('plan');
 
   const [step, setStep] = useState(1);
@@ -49,7 +56,9 @@ function App() {
 
     // Must await getRedirectResult FIRST so Firebase processes the OAuth redirect
     // before onAuthStateChanged fires — otherwise it fires with null and shows login
-    getRedirectResult(auth).catch(() => {});
+    getRedirectResult(auth).catch(err => {
+      if (err?.code !== 'auth/no-auth-event') console.error('Redirect auth error:', err?.code);
+    });
 
     const unsub = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
@@ -61,14 +70,12 @@ function App() {
             if (data.aiPlan) {
               setAiPlan(data.aiPlan);
               if (data.formData) setFormData(data.formData);
-              setView('dashboard');
             }
           }
         } catch (e) {
           console.error("Error fetching user data:", e);
         }
       } else {
-        setView('wizard');
         setAiPlan(null);
       }
       setAuthLoading(false);
@@ -92,7 +99,6 @@ function App() {
         }, { merge: true });
       }
       setAiPlan(generated);
-      setView('dashboard');
       setActiveTab('plan');
     } catch (err) {
       console.error("Firebase AI Logic failed:", err);
@@ -101,8 +107,10 @@ function App() {
     }
   };
 
+  // Derive view from aiPlan — no separate state needed
+  const view = aiPlan ? 'dashboard' : 'wizard';
+
   const resetWizard = () => {
-    setView('wizard');
     setStep(1);
     setAiPlan(null);
   };
@@ -136,7 +144,7 @@ function App() {
       case 'plan': return <MyPlan formData={formData} aiPlan={aiPlan} />;
       case 'calories': return <CalorieTrackerPage formData={formData} />;
       case 'health': return <HealthPage />;
-      case 'profile': return <ProfilePage formData={formData} resetWizard={resetWizard} />;
+      case 'profile': return <ProfilePage formData={formData} user={user} resetWizard={resetWizard} />;
       default: return <MyPlan formData={formData} aiPlan={aiPlan} />;
     }
   };
@@ -225,7 +233,9 @@ function App() {
         </div>
       </header>
       <main className="dash-content">
-        {renderDashboardTab()}
+        <Suspense fallback={<TabFallback />}>
+          {renderDashboardTab()}
+        </Suspense>
       </main>
       <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
     </div>

@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { memo } from 'react';
 
-const ExerciseRow = ({
+const ExerciseRow = memo(({
   ex,
   exIdx,
   dayIdx,
@@ -11,6 +11,7 @@ const ExerciseRow = ({
   handleSwap
 }) => {
   return (
+    // memo() above prevents re-render unless isDone, isSwapping, or ex props change
     <tr className={isDone ? 'exercise-done' : ''} style={{ opacity: isDone ? 0.5 : 1 }}>
       <td>
         <input
@@ -45,3 +46,5 @@ const ExerciseRow = ({
 };
 
 export default ExerciseRow;
+// Named export for testing
+export { ExerciseRow };

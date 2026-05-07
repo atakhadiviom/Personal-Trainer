@@ -3,7 +3,7 @@ import { aiInstance } from '../firebase';
 
 export const generateWorkoutPlan = async (formData) => {
   const model = getGenerativeModel(aiInstance, {
-    model: "gemini-2.5-flash-lite",
+    model: "gemini-3-flash-preview",
     generationConfig: { responseMimeType: "application/json" }
   });
 

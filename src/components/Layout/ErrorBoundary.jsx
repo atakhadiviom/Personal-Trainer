@@ -35,7 +35,8 @@ class ErrorBoundary extends React.Component {
               REBOOT SYSTEM
             </button>
 
-            {this.state.errorInfo && (
+            {/* Only show stack trace in development — never expose internals in production */}
+            {import.meta.env.DEV && this.state.errorInfo && (
               <details style={{ background: 'rgba(0,0,0,0.5)', padding: '16px', borderRadius: '8px', cursor: 'pointer', color: 'var(--text-dim)', fontSize: '0.8rem', fontFamily: 'monospace' }}>
                 <summary>View Technical Stack Trace</summary>
                 <div style={{ marginTop: '12px', whiteSpace: 'pre-wrap' }}>

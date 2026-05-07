@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { auth, db, aiInstance } from '../../firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { getGenerativeModel } from 'firebase/ai';
@@ -18,10 +18,10 @@ const CalorieTrackerPage = ({ formData }) => {
   const targetCarbs = Math.round((finalTargetCals * 0.4) / 4);
   const targetFat = Math.round((finalTargetCals * 0.25) / 9);
 
-  const today = new Date().toISOString().split('T')[0];
-  const [messages, setMessages] = useState([
-    { role: 'ai', text: "Hey! 👋 Tell me what you ate and I'll calculate the calories and macros for you. Just type naturally — like \"2 eggs and toast with butter\" or \"large chicken shawarma wrap\"." }
-  ]);
+  // Memoize today's date so it doesn't change reference on every render (fixes midnight re-run bug)
+  const today = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const initialMessage = { role: 'ai', text: "Hey! 👋 Tell me what you ate and I'll calculate the calories and macros for you. Just type naturally — like \"2 eggs and toast with butter\" or \"large chicken shawarma wrap\"." };
+  const [messages, setMessages] = useState([initialMessage]);
   const [entries, setEntries] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -37,7 +37,8 @@ const CalorieTrackerPage = ({ formData }) => {
         if (snap.exists()) {
           const data = snap.data();
           if (data.entries) setEntries(data.entries);
-          if (data.chatHistory) setMessages(prev => [...prev, ...data.chatHistory]);
+          // Replace messages (not append) to avoid duplicating history on re-mount
+          if (data.chatHistory?.length) setMessages([initialMessage, ...data.chatHistory]);
         }
       } catch (e) {
         console.warn("Could not load calorie log:", e);
@@ -51,32 +52,35 @@ const CalorieTrackerPage = ({ formData }) => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  const plateauChecked = useRef(false);
   useEffect(() => {
     const checkPlateau = async () => {
-      if (!dynamicTarget) return;
+      if (!dynamicTarget || plateauChecked.current) return;
       const user = auth.currentUser;
       if (!user) return;
+      plateauChecked.current = true;
       try {
-        const days = [];
-        for (let i = 1; i <= 7; i++) {
+        // Fetch all 7 days in parallel instead of serially
+        const dateStrings = Array.from({ length: 7 }, (_, i) => {
           const d = new Date();
-          d.setDate(d.getDate() - i);
-          const dateStr = d.toISOString().split('T')[0];
-          const snap = await getDoc(doc(db, 'users', user.uid, 'calorieLog', dateStr));
-          if (snap.exists()) {
-            const entries = snap.data().entries || [];
-            const total = entries.reduce((s, e) => s + (e.cals || 0), 0);
-            if (total > 0) days.push(total);
-          }
-        }
+          d.setDate(d.getDate() - (i + 1));
+          return d.toISOString().split('T')[0];
+        });
+        const snaps = await Promise.all(
+          dateStrings.map(dateStr => getDoc(doc(db, 'users', user.uid, 'calorieLog', dateStr)))
+        );
+        const days = snaps
+          .filter(s => s.exists())
+          .map(s => (s.data().entries || []).reduce((sum, e) => sum + (e.cals || 0), 0))
+          .filter(total => total > 0);
         if (days.length >= 5) {
           const avg = days.reduce((a, b) => a + b, 0) / days.length;
-          if (avg > finalTargetCals * 0.95) setPlateauAlert(true);
+          if (avg > dynamicTarget * 0.95) setPlateauAlert(true);
         }
       } catch (e) { console.warn('Plateau check error:', e); }
     };
     checkPlateau();
-  }, [dynamicTarget, finalTargetCals]);
+  }, [dynamicTarget]);
 
   useEffect(() => {
     const fetchTDEE = async () => {
@@ -123,7 +127,7 @@ const CalorieTrackerPage = ({ formData }) => {
 
     try {
       const model = getGenerativeModel(aiInstance, {
-        model: "gemini-2.5-flash-lite",
+        model: "gemini-3-flash-preview",
         generationConfig: { responseMimeType: "application/json" }
       });
 
@@ -175,9 +179,12 @@ Be accurate. Use standard serving sizes if the user doesn't specify amounts. All
       const user = auth.currentUser;
       if (user) {
         try {
+          // Save full running chat history (not just last exchange) so it survives re-mounts
+          const fullHistory = [...messages.filter(m => m.role !== 'ai' || m !== initialMessage),
+            { role: 'user', text: userMsg }, { role: 'ai', text: responseText }];
           await setDoc(doc(db, 'users', user.uid, 'calorieLog', today), {
             entries: updatedEntries,
-            chatHistory: [{ role: 'user', text: userMsg }, { role: 'ai', text: responseText }]
+            chatHistory: fullHistory.slice(-40) // cap at 40 messages to avoid unbounded growth
           }, { merge: true });
         } catch (err) {
           console.warn("Could not save calorie entry:", err);

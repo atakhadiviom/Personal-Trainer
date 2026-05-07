@@ -3,7 +3,7 @@ import { getAnalytics } from "firebase/analytics";
 import { initializeAuth, browserLocalPersistence, browserPopupRedirectResolver } from "firebase/auth";
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
-import { getAI } from "firebase/ai";
+import { getAI, GoogleAIBackend } from "firebase/ai";
 
 const requiredFirebaseEnvKeys = [
   "VITE_FIREBASE_API_KEY",
@@ -55,4 +55,4 @@ export const db = app
   : null;
 
 export const storage = app ? getStorage(app) : null;
-export const aiInstance = app ? getAI(app) : null;
+export const aiInstance = app ? getAI(app, { backend: new GoogleAIBackend() }) : null;

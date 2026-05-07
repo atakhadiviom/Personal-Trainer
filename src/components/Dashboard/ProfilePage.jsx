@@ -1,12 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { auth } from '../../firebase';
 import { signOut } from 'firebase/auth';
-import { LineChart, Line, XAxis, YAxis, Tooltip } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import * as googleFit from '../../utils/googleFitService';
-import { useState, useEffect } from 'react';
 
-const ProfilePage = ({ formData, resetWizard }) => {
-  const user = auth.currentUser;
+const ProfilePage = ({ formData, user, resetWizard }) => {
 
   const handleSignOut = () => signOut(auth);
   const [dynamicTDEE, setDynamicTDEE] = useState(null);
@@ -61,18 +59,20 @@ const ProfilePage = ({ formData, resetWizard }) => {
           {formData.weight && (
             <div style={{ marginTop: '32px' }}>
               <h4 style={{ marginBottom: '16px', color: 'var(--text-secondary)' }}>12-Week Weight Projection</h4>
-              <div style={{ height: '220px', width: '100%', overflowX: 'auto', background: 'rgba(0,0,0,0.2)', padding: '16px 8px 8px 0', borderRadius: 'var(--r-md)', border: '1px solid var(--border)' }}>
-                <LineChart width={340} height={200} data={
-                    Array.from({length: 12}, (_, i) => ({ 
-                      week: `W${i+1}`, 
-                      weight: formData.goal === 'fatloss' ? parseInt(formData.weight) - (i * (dynamicTDEE ? 500 * 7 / 7700 : 0.5)) : parseInt(formData.weight) + (i * (dynamicTDEE ? 500 * 7 / 7700 : 0.3))
-                    }))
-                  }>
+              <div style={{ height: '220px', width: '100%', background: 'rgba(0,0,0,0.2)', padding: '16px 8px 8px 0', borderRadius: 'var(--r-md)', border: '1px solid var(--border)' }}>
+                <ResponsiveContainer width="100%" height={200}>
+                  <LineChart data={
+                      Array.from({length: 12}, (_, i) => ({
+                        week: `W${i+1}`,
+                        weight: formData.goal === 'fatloss' ? parseInt(formData.weight) - (i * (dynamicTDEE ? 500 * 7 / 7700 : 0.5)) : parseInt(formData.weight) + (i * (dynamicTDEE ? 500 * 7 / 7700 : 0.3))
+                      }))
+                    }>
                     <XAxis dataKey="week" stroke="var(--text-dim)" fontSize={12} tickLine={false} axisLine={false} />
                     <YAxis domain={['auto', 'auto']} stroke="var(--text-dim)" fontSize={12} tickLine={false} axisLine={false} width={40} />
                     <Tooltip contentStyle={{ background: 'var(--bg-espresso)', border: '1px solid var(--border)', borderRadius: '4px' }} />
                     <Line type="monotone" dataKey="weight" stroke="var(--accent-purple)" strokeWidth={3} dot={{ fill: 'var(--accent-purple)', r: 3 }} />
                   </LineChart>
+                </ResponsiveContainer>
               </div>
             </div>
           )}

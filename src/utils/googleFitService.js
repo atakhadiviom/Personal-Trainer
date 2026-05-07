@@ -32,8 +32,23 @@ export const getToken = () => {
 
 export const connect = () => {
   return new Promise((resolve, reject) => {
-    initTokenClient(resolve);
-    if (!tokenClient) { reject(new Error('GIS not loaded')); return; }
+    if (!window.google) { reject(new Error('GIS not loaded')); return; }
+    tokenClient = window.google.accounts.oauth2.initTokenClient({
+      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+      scope: SCOPES.join(' '),
+      callback: (response) => {
+        if (response.access_token) {
+          const expiry = Date.now() + response.expires_in * 1000;
+          localStorage.setItem('gfit_token', response.access_token);
+          localStorage.setItem('gfit_token_exp', expiry);
+          resolve(response.access_token);
+        } else {
+          reject(new Error('No access token in response'));
+        }
+      },
+      // Resolve rejection when user cancels the OAuth consent popup
+      error_callback: (err) => reject(new Error(err?.type || 'oauth_error')),
+    });
     tokenClient.requestAccessToken({ prompt: 'consent' });
   });
 };
