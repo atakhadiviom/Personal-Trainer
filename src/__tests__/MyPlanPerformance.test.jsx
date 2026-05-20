@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import MyPlan from '../components/Dashboard/MyPlan';
 import { updateDoc } from 'firebase/firestore';
 
@@ -15,7 +15,10 @@ vi.mock('../firebase', () => {
 vi.mock('firebase/firestore', () => {
   return {
     doc: vi.fn(),
-    getDoc: vi.fn(() => Promise.resolve({ exists: () => true, data: () => ({ completedExercises: {} }) })),
+    getDoc: vi.fn(() => Promise.resolve({
+      exists: () => true,
+      data: () => ({ completedExercises: {}, weeklyPlans: {} })
+    })),
     updateDoc: vi.fn(() => Promise.resolve()),
   };
 });
@@ -54,10 +57,20 @@ describe('MyPlan Performance Optimization', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('measures the number of updateDoc calls when rapidly toggling exercises', async () => {
     render(<MyPlan aiPlan={mockPlan} formData={{}} />);
+
+    // Let the async load() effect settle (flushes the getDoc promise)
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
 
     // Wait for the plan to render
     const checkboxes = await screen.findAllByRole('checkbox');
@@ -70,8 +83,10 @@ describe('MyPlan Performance Optimization', () => {
     fireEvent.click(checkboxes[3]);
     fireEvent.click(checkboxes[4]);
 
-    // Wait some time to let debounce (if any) to trigger
-    await new Promise(r => setTimeout(r, 1500));
+    // Advance fake timers past the 1s debounce and flush all async work
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
 
     // Wait for updateDoc to be called
     console.log(`Number of updateDoc calls: ${updateDoc.mock.calls.length}`);

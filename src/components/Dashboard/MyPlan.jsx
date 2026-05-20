@@ -98,17 +98,51 @@ const MyPlan = ({ formData, aiPlan }) => {
         const snap = await getDoc(doc(db, 'users', user.uid));
         if (snap.exists()) {
           const data = snap.data();
-          if (data.completedExercises) setCompletedExercises(data.completedExercises);
-          if (data.weeklyPlans) setWeeklyPlans(data.weeklyPlans);
+          const loadedCompleted = data.completedExercises || {};
+          const loadedWeeklyPlans = data.weeklyPlans || {};
+
+          // Only update local state if user hasn't already toggled exercises since mount
+          if (!isDirtyRef.current && data.completedExercises) setCompletedExercises(loadedCompleted);
+          if (data.weeklyPlans) setWeeklyPlans(loadedWeeklyPlans);
           if (data.formData?.weight) setCheckinData(prev => ({ ...prev, currentWeight: data.formData.weight }));
 
+          // Auto-jump to the first incomplete week that has a schedule
+          const getSchedule = (week) => {
+            if (!localPlan) return null;
+            if (week === 1) return localPlan.workout.schedule;
+            return loadedWeeklyPlans[String(week)]?.schedule || null;
+          };
+          const checkComplete = (week, schedule, completed) => {
+            if (!schedule) return false;
+            return schedule.every((day) =>
+              day.exercises.every((_, exIdx) => {
+                const key = `w${week}_${day.id}_${exIdx}`;
+                const oldKey = week === 1 ? `${day.id}_${exIdx}` : null;
+                return completed[key] === true || (oldKey && completed[oldKey] === true);
+              })
+            );
+          };
+          let resumeWeek = 1;
+          for (let w = 1; w <= 12; w++) {
+            const s = getSchedule(w);
+            // Skip weeks with no schedule (not yet unlocked)
+            if (!s) continue;
+            if (!checkComplete(w, s, loadedCompleted)) {
+              resumeWeek = w;
+              break;
+            }
+            // This week has a schedule and is complete — continue to find next
+            // If we reach week 12 and it's done, stay there
+            if (w === 12) resumeWeek = 12;
+          }
+          setSelectedWeek(resumeWeek);
+
           // If week 1 already completed before this update (old key format), show check-in automatically
-          if (localPlan && !data.weeklyPlans?.['2']) {
+          if (localPlan && !loadedWeeklyPlans['2']) {
             const schedule = localPlan.workout.schedule;
-            const completed = data.completedExercises || {};
             const w1Done = schedule?.every((day) =>
               day.exercises.every((_, exIdx) =>
-                completed[`w1_${day.id}_${exIdx}`] || completed[`${day.id}_${exIdx}`]
+                loadedCompleted[`w1_${day.id}_${exIdx}`] || loadedCompleted[`${day.id}_${exIdx}`]
               )
             );
             if (w1Done) setTimeout(() => setShowCheckin(true), 800);
