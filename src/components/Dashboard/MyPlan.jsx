@@ -109,6 +109,9 @@ const MyPlan = ({ formData, aiPlan }) => {
           // Auto-jump to the first incomplete week that has a schedule.
           // Use aiPlan prop directly — localPlan state is null at this point
           // because setLocalPlan(aiPlan) hasn't committed yet on first render.
+          console.debug('[NovaFit resume] aiPlan available:', !!aiPlan);
+          console.debug('[NovaFit resume] loadedWeeklyPlans keys:', Object.keys(loadedWeeklyPlans));
+          console.debug('[NovaFit resume] loadedCompleted keys count:', Object.keys(loadedCompleted).length);
           const getSchedule = (week) => {
             if (!aiPlan) return null;
             if (week === 1) return aiPlan.workout.schedule;
@@ -129,7 +132,9 @@ const MyPlan = ({ formData, aiPlan }) => {
             const s = getSchedule(w);
             // Skip weeks with no schedule (not yet unlocked)
             if (!s) continue;
-            if (!checkComplete(w, s, loadedCompleted)) {
+            const done = checkComplete(w, s, loadedCompleted);
+            console.debug(`[NovaFit resume] week ${w}: hasSchedule=true, complete=${done}`);
+            if (!done) {
               resumeWeek = w;
               break;
             }
@@ -137,6 +142,7 @@ const MyPlan = ({ formData, aiPlan }) => {
             // If we reach week 12 and it's done, stay there
             if (w === 12) resumeWeek = 12;
           }
+          console.debug('[NovaFit resume] → jumping to week', resumeWeek);
           setSelectedWeek(resumeWeek);
 
           // If week 1 already completed before this update (old key format), show check-in automatically
