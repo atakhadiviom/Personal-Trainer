@@ -22,6 +22,7 @@ vi.mock('../../../utils/googleFitService', () => ({
 }));
 
 vi.mock('recharts', () => ({
+  ResponsiveContainer: ({ children }) => <div data-testid="responsive-container">{children}</div>,
   LineChart: ({ children }) => <div data-testid="line-chart">{children}</div>,
   Line: () => <div data-testid="line" />,
   XAxis: () => <div data-testid="x-axis" />,

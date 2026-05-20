@@ -112,9 +112,9 @@ exports.dailyWorkoutNudge = onSchedule("0 8 * * *", async (event) => {
 });
 
 /**
- * Weekly Photo Accountability Nudge (Runs every Sunday at 9:00 AM)
+ * Weekly Progress Accountability Nudge (Runs every Sunday at 9:00 AM)
  */
-exports.weeklyPhotoNudge = onSchedule("0 9 * * 0", async (event) => {
+exports.weeklyProgressNudge = onSchedule("0 9 * * 0", async (event) => {
   const usersSnapshot = await admin.firestore().collection('users').get();
   const tokens = [];
   usersSnapshot.forEach(doc => {
@@ -125,8 +125,8 @@ exports.weeklyPhotoNudge = onSchedule("0 9 * * 0", async (event) => {
   if (tokens.length > 0) {
     const message = {
       notification: {
-        title: "📸 Progress Check-in!",
-        body: "A new week begins tomorrow. Snap your weekly full-body photo to track your transformation."
+        title: "📈 Progress Check-in!",
+        body: "A new week begins tomorrow. Review your weekly progression and update your stats to track your transformation."
       },
       tokens: tokens
     };

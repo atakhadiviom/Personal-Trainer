@@ -5,6 +5,7 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'rec
 import * as googleFit from '../../utils/googleFitService';
 
 const ProfilePage = ({ formData, user, resetWizard }) => {
+  const currentUser = user || auth.currentUser;
 
   const handleSignOut = () => signOut(auth);
   const [dynamicTDEE, setDynamicTDEE] = useState(null);
@@ -29,15 +30,15 @@ const ProfilePage = ({ formData, user, resetWizard }) => {
           {/* User Info */}
           <div className="profile-info">
             <div className="profile-avatar">
-              {user?.photoURL ? (
-                <img src={user.photoURL} alt="avatar" />
+              {currentUser?.photoURL ? (
+                <img src={currentUser.photoURL} alt="avatar" />
               ) : (
-                <div className="avatar-placeholder">{(user?.email || 'U')[0].toUpperCase()}</div>
+                <div className="avatar-placeholder">{(currentUser?.email || 'U')[0].toUpperCase()}</div>
               )}
             </div>
             <div>
-              <h3 style={{ marginBottom: '4px' }}>{user?.displayName || 'NovaFit Athlete'}</h3>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>{user?.email}</p>
+              <h3 style={{ marginBottom: '4px' }}>{currentUser?.displayName || 'NovaFit Athlete'}</h3>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>{currentUser?.email}</p>
             </div>
           </div>
 
