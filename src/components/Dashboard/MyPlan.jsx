@@ -106,10 +106,12 @@ const MyPlan = ({ formData, aiPlan }) => {
           if (data.weeklyPlans) setWeeklyPlans(loadedWeeklyPlans);
           if (data.formData?.weight) setCheckinData(prev => ({ ...prev, currentWeight: data.formData.weight }));
 
-          // Auto-jump to the first incomplete week that has a schedule
+          // Auto-jump to the first incomplete week that has a schedule.
+          // Use aiPlan prop directly — localPlan state is null at this point
+          // because setLocalPlan(aiPlan) hasn't committed yet on first render.
           const getSchedule = (week) => {
-            if (!localPlan) return null;
-            if (week === 1) return localPlan.workout.schedule;
+            if (!aiPlan) return null;
+            if (week === 1) return aiPlan.workout.schedule;
             return loadedWeeklyPlans[String(week)]?.schedule || null;
           };
           const checkComplete = (week, schedule, completed) => {
@@ -138,8 +140,8 @@ const MyPlan = ({ formData, aiPlan }) => {
           setSelectedWeek(resumeWeek);
 
           // If week 1 already completed before this update (old key format), show check-in automatically
-          if (localPlan && !loadedWeeklyPlans['2']) {
-            const schedule = localPlan.workout.schedule;
+          if (aiPlan && !loadedWeeklyPlans['2']) {
+            const schedule = aiPlan.workout.schedule;
             const w1Done = schedule?.every((day) =>
               day.exercises.every((_, exIdx) =>
                 loadedCompleted[`w1_${day.id}_${exIdx}`] || loadedCompleted[`${day.id}_${exIdx}`]
