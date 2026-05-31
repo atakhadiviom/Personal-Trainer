@@ -17,12 +17,12 @@ const LoadingAI = () => {
         NovaFit AI is analyzing your profile, taking into account your injuries, and adapting to the equipment available at your gym.
       </p>
 
-      <style dangerouslySetInnerHTML={{__html: `
+      <style>{`
         @keyframes spin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
         }
-      `}} />
+      `}</style>
     </div>
   );
 };
