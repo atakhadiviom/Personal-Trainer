@@ -43,7 +43,7 @@ describe('ExerciseRow Component', () => {
 
     // Watch button is present with correct link
     const watchLink = screen.getByRole('link', { name: /▶ Watch/i });
-    expect(watchLink).toHaveAttribute('href', 'https://www.youtube.com/results?search_query=how+to+Bench%20Press');
+    expect(watchLink).toHaveAttribute('href', 'https://www.youtube.com/results?search_query=how+to+Bench+Press');
   });
 
   it('calls toggleExercise when checkbox is clicked', () => {

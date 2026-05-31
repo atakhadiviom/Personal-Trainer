@@ -5,6 +5,7 @@ import ExerciseRow from './ExerciseRow';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { getGenerativeModel } from 'firebase/ai';
 import * as googleFit from '../../utils/googleFitService';
+import { getSafeYoutubeUrl } from '../../utils/url';
 
 const MyPlan = ({ formData, aiPlan }) => {
   const [selectedWeek, setSelectedWeek] = useState(1);
@@ -644,7 +645,7 @@ Return ONLY valid JSON in this shape:
                   {day.warmup.map((w, i) => (
                     <li key={i}>
                       <strong>{w.name}</strong> • {w.duration}
-                      <a href={`https://www.youtube.com/results?search_query=how+to+${encodeURIComponent(w.name)}`} target="_blank" rel="noreferrer" style={{ marginLeft: '8px', color: 'var(--accent-cyan)', fontSize: '0.75rem', textDecoration: 'none' }}>▶ Watch</a>
+                      <a href={getSafeYoutubeUrl(w.name)} target="_blank" rel="noreferrer" style={{ marginLeft: '8px', color: 'var(--accent-cyan)', fontSize: '0.75rem', textDecoration: 'none' }}>▶ Watch</a>
                     </li>
                   ))}
                 </ul>
@@ -691,7 +692,7 @@ Return ONLY valid JSON in this shape:
                   {day.cooldown.map((c, i) => (
                     <li key={i}>
                       <strong>{c.name}</strong> • {c.duration}
-                      <a href={`https://www.youtube.com/results?search_query=how+to+${encodeURIComponent(c.name)}`} target="_blank" rel="noreferrer" style={{ marginLeft: '8px', color: 'var(--accent-cyan)', fontSize: '0.75rem', textDecoration: 'none' }}>▶ Watch</a>
+                      <a href={getSafeYoutubeUrl(c.name)} target="_blank" rel="noreferrer" style={{ marginLeft: '8px', color: 'var(--accent-cyan)', fontSize: '0.75rem', textDecoration: 'none' }}>▶ Watch</a>
                     </li>
                   ))}
                 </ul>

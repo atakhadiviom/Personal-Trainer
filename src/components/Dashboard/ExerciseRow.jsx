@@ -1,4 +1,5 @@
 import React, { memo } from 'react';
+import { getSafeYoutubeUrl } from '../../utils/url';
 
 const ExerciseRow = memo(({
   ex,
@@ -39,7 +40,7 @@ const ExerciseRow = memo(({
       <td className="ex-rest">{ex.rest}</td>
       <td className="ex-weight">{ex.weight}</td>
       <td>
-        <a href={`https://www.youtube.com/results?search_query=how+to+${encodeURIComponent(ex.name)}`} target="_blank" rel="noreferrer" className="btn-yt">▶ Watch</a>
+        <a href={getSafeYoutubeUrl(ex.name)} target="_blank" rel="noreferrer" className="btn-yt">▶ Watch</a>
       </td>
     </tr>
   );

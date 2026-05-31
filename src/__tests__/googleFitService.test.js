@@ -22,9 +22,11 @@ global.fetch = vi.fn();
 global.window = global.window || {};
 
 describe('googleFitService', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     localStorageMock.clear();
     vi.clearAllMocks();
+    const { clearFetchCache } = await import('../utils/googleFitService');
+    clearFetchCache();
   });
 
   describe('getToken', () => {
@@ -94,6 +96,34 @@ describe('googleFitService', () => {
       });
       const { getCaloriesBurned } = await import('../utils/googleFitService');
       const result = await getCaloriesBurned();
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('getSteps', () => {
+    it('returns the step count for today', async () => {
+      localStorageMock.setItem('gfit_token', 'tok');
+      localStorageMock.setItem('gfit_token_exp', String(Date.now() + 3600000));
+      global.fetch.mockResolvedValueOnce({
+        status: 200,
+        json: async () => ({
+          bucket: [{ dataset: [{ point: [{ value: [{ intVal: 5432 }] }] }] }]
+        })
+      });
+      const { getSteps } = await import('../utils/googleFitService');
+      const result = await getSteps();
+      expect(result).toBe(5432);
+    });
+
+    it('returns null when no step data', async () => {
+      localStorageMock.setItem('gfit_token', 'tok');
+      localStorageMock.setItem('gfit_token_exp', String(Date.now() + 3600000));
+      global.fetch.mockResolvedValueOnce({
+        status: 200,
+        json: async () => ({ bucket: [{ dataset: [{ point: [] }] }] })
+      });
+      const { getSteps } = await import('../utils/googleFitService');
+      const result = await getSteps();
       expect(result).toBeNull();
     });
   });

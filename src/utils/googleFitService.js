@@ -61,6 +61,8 @@ export const disconnect = () => {
 const fetchCache = new Map();
 const CACHE_TTL_MS = 60000; // 1 minute cache
 
+export const clearFetchCache = () => fetchCache.clear();
+
 const fetchFit = async (url, method = 'GET', body = null) => {
   const token = getToken();
   if (!token) throw new Error('Not connected');
