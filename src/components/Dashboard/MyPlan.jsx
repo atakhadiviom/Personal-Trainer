@@ -351,8 +351,8 @@ CLIENT:
 WEEK ${selectedWeek} FEEDBACK:
 - Week rating: ${checkinData.weekRating}
 - Energy: ${checkinData.energyLevel}/5
-- Pain notes: ${checkinData.newPain || 'none'}
-- Extra notes: ${checkinData.notes || 'none'}
+- Pain notes: ${checkinData.newPain?.trim() || 'none'}
+- Extra notes: ${checkinData.notes?.trim() || 'none'}
 - Heart rate context: ${hrData ? `${hrData} BPM average/intense reading available` : 'not available'}
 - Sleep history: ${sleepHist.length ? sleepHist.join(', ') + ' hours' : 'not available'}
 
