@@ -106,6 +106,39 @@ describe('googleFitService', () => {
     });
   });
 
+  describe('getWeeklyAverageCalories', () => {
+    it('returns average of non-zero days', async () => {
+      localStorageMock.setItem('gfit_token', 'tok');
+      localStorageMock.setItem('gfit_token_exp', String(Date.now() + 3600000));
+      global.fetch.mockResolvedValueOnce({
+        status: 200,
+        json: async () => ({
+          bucket: [
+            { dataset: [{ point: [{ value: [{ fpVal: 2000 }] }] }] },
+            { dataset: [{ point: [{ value: [{ fpVal: 2500 }] }] }] },
+            { dataset: [{ point: [] }] },
+            { dataset: [{ point: [{ value: [{ fpVal: 3000 }] }] }] },
+          ]
+        })
+      });
+      const { getWeeklyAverageCalories } = await import('../utils/googleFitService');
+      const result = await getWeeklyAverageCalories();
+      expect(result).toBe(2500); // (2000+2500+3000)/3
+    });
+
+    it('returns null when no calorie data', async () => {
+      localStorageMock.setItem('gfit_token', 'tok');
+      localStorageMock.setItem('gfit_token_exp', String(Date.now() + 3600000));
+      global.fetch.mockResolvedValueOnce({
+        status: 200,
+        json: async () => ({ bucket: [{ dataset: [{ point: [] }] }] })
+      });
+      const { getWeeklyAverageCalories } = await import('../utils/googleFitService');
+      const result = await getWeeklyAverageCalories();
+      expect(result).toBeNull();
+    });
+  });
+
   describe('getSleepHistory', () => {
     it('returns array with date and hours for each bucket', async () => {
       localStorageMock.setItem('gfit_token', 'tok');
