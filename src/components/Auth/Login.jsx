@@ -51,7 +51,7 @@ const Login = () => {
 
   const handleGoogleSignIn = async () => {
     if (inWebView) {
-      window.open(window.location.href, '_blank', 'noreferrer');
+      window.open(window.location.origin, '_blank', 'noreferrer');
       return;
     }
     setError('');
