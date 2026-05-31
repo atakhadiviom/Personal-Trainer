@@ -511,7 +511,7 @@ Return ONLY valid JSON in this shape:
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (e) {
       console.error(e);
-      displayError('Failed to generate next week. Please try again.');
+      displayError('Failed to generate adjustment. Please try again.');
     } finally {
       setIsGenerating(false);
     }
