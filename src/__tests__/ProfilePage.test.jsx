@@ -1,9 +1,10 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import ProfilePage from '../components/Dashboard/ProfilePage';
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
+import * as googleFitService from '../utils/googleFitService';
 
 vi.mock('../firebase', () => ({
   auth: {
@@ -117,5 +118,24 @@ describe('ProfilePage', () => {
     render(<ProfilePage formData={defaultFormData} resetWizard={vi.fn()} />);
     expect(screen.getByText('NovaFit Athlete')).toBeInTheDocument();
     expect(screen.getByText('U')).toBeInTheDocument();
+  });
+
+  it('handles TDEE fetch error gracefully', async () => {
+    // Suppress console.warn for the test
+    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    // Setup mock values for error case using vi.spyOn to ensure explicit mocking
+    vi.spyOn(googleFitService, 'getToken').mockReturnValue('fake-token');
+    const mockError = new Error('Test fetch error');
+    vi.spyOn(googleFitService, 'getWeeklyAverageCalories').mockRejectedValue(mockError);
+
+    render(<ProfilePage formData={defaultFormData} resetWizard={vi.fn()} />);
+
+    // Assert console.warn was called
+    await waitFor(() => {
+      expect(consoleWarnSpy).toHaveBeenCalledWith('TDEE fetch error:', mockError);
+    });
+
+    consoleWarnSpy.mockRestore();
   });
 });
