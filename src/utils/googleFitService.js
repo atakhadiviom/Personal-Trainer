@@ -58,17 +58,40 @@ export const disconnect = () => {
   localStorage.removeItem('gfit_token_exp');
 };
 
+const fetchCache = new Map();
+const CACHE_TTL_MS = 60000; // 1 minute cache
+
 const fetchFit = async (url, method = 'GET', body = null) => {
   const token = getToken();
   if (!token) throw new Error('Not connected');
+
+  const cacheKey = `${method}:${url}:${body ? JSON.stringify(body) : ''}`;
+
+  if (fetchCache.has(cacheKey)) {
+    const { timestamp, promise } = fetchCache.get(cacheKey);
+    if (Date.now() - timestamp < CACHE_TTL_MS) {
+      return promise;
+    }
+    fetchCache.delete(cacheKey);
+  }
+
   const opts = {
     method,
     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
   };
   if (body) opts.body = JSON.stringify(body);
-  const res = await fetch(url, opts);
-  if (res.status === 401) { disconnect(); throw new Error('Token expired'); }
-  return res.json();
+
+  const fetchPromise = fetch(url, opts).then(res => {
+    if (res.status === 401) { disconnect(); throw new Error('Token expired'); }
+    return res.json();
+  }).catch(err => {
+    fetchCache.delete(cacheKey);
+    throw err;
+  });
+
+  fetchCache.set(cacheKey, { timestamp: Date.now(), promise: fetchPromise });
+
+  return fetchPromise;
 };
 
 export const getSteps = async () => {
