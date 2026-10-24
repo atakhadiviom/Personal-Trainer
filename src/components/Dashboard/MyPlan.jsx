@@ -21,7 +21,6 @@ const MyPlan = ({ formData, aiPlan }) => {
   const [readinessLabel, setReadinessLabel] = useState('Checking Readiness...');
   const [fitSteps, setFitSteps] = useState(null);
   const [fitCalsBurned, setFitCalsBurned] = useState(null);
-  const [restingHR, setRestingHR] = useState(null);
   const [stepAvg7Day, setStepAvg7Day] = useState(null);
   const [nudgeDismissed, setNudgeDismissed] = useState(!!sessionStorage.getItem('gfit_nudge_dismissed'));
   const [heartRateForCheckin, setHeartRateForCheckin] = useState(null);
@@ -43,7 +42,12 @@ const MyPlan = ({ formData, aiPlan }) => {
     errorTimeoutRef.current = setTimeout(() => setError(''), 5000);
   };
 
-  useEffect(() => { setLocalPlan(aiPlan); }, [aiPlan]);
+  // Sync from prop during render (avoids an extra effect-driven render)
+  const [syncedPlan, setSyncedPlan] = useState(null);
+  if (syncedPlan !== aiPlan) {
+    setSyncedPlan(aiPlan);
+    setLocalPlan(aiPlan);
+  }
 
   useEffect(() => {
     const fetchHealthData = async () => {
@@ -58,7 +62,6 @@ const MyPlan = ({ formData, aiPlan }) => {
           // Only set baseline once — never overwrite so comparison stays meaningful (L4 fix)
           const existingBaseline = localStorage.getItem('gfit_hr_baseline');
           if (rhr) {
-            setRestingHR(rhr);
             if (!existingBaseline) localStorage.setItem('gfit_hr_baseline', String(rhr));
           }
           const baseline = parseInt(existingBaseline || rhr || '0');

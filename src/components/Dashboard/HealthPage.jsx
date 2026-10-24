@@ -44,6 +44,7 @@ const HealthPage = () => {
 
   useEffect(() => {
     googleFit.initTokenClient();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetchData sets loading state before async work
     if (isConnected) fetchData();
   }, [isConnected]);
 
@@ -132,7 +133,7 @@ const HealthPage = () => {
             const insightColor = avg >= 7 ? 'var(--accent-green)' : avg >= 5.5 ? '#e8a838' : '#ff6b6b';
             return (
               <div className="section-card" style={{ marginTop: '14px' }}>
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px', fontFamily: "'IBM Plex Mono', monospace" }}>Recovery Trend</div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px', fontFamily: "'JetBrains Mono', ui-monospace, monospace" }}>Recovery Trend</div>
                 <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', height: '60px', marginBottom: '8px' }}>
                   {sleepHistory.map((d, i) => {
                     const barColor = d.hours >= 7 ? 'var(--accent-green)' : d.hours >= 5.5 ? '#e8a838' : '#ff6b6b';
@@ -161,7 +162,7 @@ const HealthPage = () => {
               : { label: 'Early Bird', time: '7–9 AM' };
             return (
               <div className="section-card" style={{ marginTop: '14px' }}>
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px', fontFamily: "'IBM Plex Mono', monospace" }}>Optimal Training Time</div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px', fontFamily: "'JetBrains Mono', ui-monospace, monospace" }}>Optimal Training Time</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div style={{ fontSize: '2rem' }}>⏰</div>
                   <div>

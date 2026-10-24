@@ -2,17 +2,17 @@ import React from 'react';
 
 const StepBody = ({ formData, updateFormData, nextStep }) => {
   const goals = [
-    { id: 'muscle', icon: '💪', label: 'Build Muscle' },
-    { id: 'fatloss', icon: '🔥', label: 'Lose Fat' },
-    { id: 'endurance', icon: '🏃', label: 'Endurance' },
-    { id: 'strength', icon: '🏋️', label: 'Raw Strength' },
-    { id: 'recomp', icon: '⚡', label: 'Body Recomp' }
+    { id: 'muscle', label: 'Build Muscle' },
+    { id: 'fatloss', label: 'Lose Fat' },
+    { id: 'endurance', label: 'Endurance' },
+    { id: 'strength', label: 'Raw Strength' },
+    { id: 'recomp', label: 'Body Recomp' }
   ];
 
   const levels = [
-    { id: 'beginner', icon: '🌱', label: 'Beginner (0-6 mo)' },
-    { id: 'intermediate', icon: '⚙️', label: 'Intermediate (6mo-2yr)' },
-    { id: 'advanced', icon: '🔥', label: 'Advanced (2+ yr)' }
+    { id: 'beginner', label: 'Beginner (0-6 mo)' },
+    { id: 'intermediate', label: 'Intermediate (6mo-2yr)' },
+    { id: 'advanced', label: 'Advanced (2+ yr)' }
   ];
 
   const canProceed = formData.age && formData.weight && formData.height && formData.gender && formData.goal && formData.fitnessLevel;
@@ -71,7 +71,6 @@ const StepBody = ({ formData, updateFormData, nextStep }) => {
             <div key={goal.id}
               className={`selection-card ${formData.goal === goal.id ? 'active' : ''}`}
               onClick={() => updateFormData('goal', goal.id)}>
-              <div className="selection-icon">{goal.icon}</div>
               <span>{goal.label}</span>
             </div>
           ))}
@@ -95,7 +94,6 @@ const StepBody = ({ formData, updateFormData, nextStep }) => {
             <div key={level.id}
               className={`selection-card ${formData.fitnessLevel === level.id ? 'active' : ''}`}
               onClick={() => updateFormData('fitnessLevel', level.id)}>
-              <div className="selection-icon">{level.icon}</div>
               <span>{level.label}</span>
             </div>
           ))}

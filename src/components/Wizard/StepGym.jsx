@@ -2,11 +2,11 @@ import React from 'react';
 
 const StepGym = ({ formData, updateFormData, prevStep, nextStep }) => {
   const environments = [
-    { id: 'full_gym', icon: '🏋️', label: 'Full Gym' },
-    { id: 'home_basic', icon: '🏠', label: 'Home (Basic)' },
-    { id: 'home_advanced', icon: '🔧', label: 'Home (Full Setup)' },
-    { id: 'outdoor', icon: '🌳', label: 'Outdoor / Park' },
-    { id: 'hotel', icon: '🏨', label: 'Hotel / Travel' }
+    { id: 'full_gym', label: 'Full Gym' },
+    { id: 'home_basic', label: 'Home (Basic)' },
+    { id: 'home_advanced', label: 'Home (Full Setup)' },
+    { id: 'outdoor', label: 'Outdoor / Park' },
+    { id: 'hotel', label: 'Hotel / Travel' }
   ];
 
   const daysPerWeek = [
@@ -42,7 +42,6 @@ const StepGym = ({ formData, updateFormData, prevStep, nextStep }) => {
             <div key={env.id}
               className={`selection-card ${formData.trainingEnv === env.id ? 'active' : ''}`}
               onClick={() => updateFormData('trainingEnv', env.id)}>
-              <div className="selection-icon">{env.icon}</div>
               <span>{env.label}</span>
             </div>
           ))}

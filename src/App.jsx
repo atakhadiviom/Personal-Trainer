@@ -30,7 +30,7 @@ const TabFallback = () => (
 
 function App() {
   const [user, setUser] = useState(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(!firebaseSetupError && !!auth && !!db);
   const [activeTab, setActiveTab] = useState('plan');
 
   const [step, setStep] = useState(1);
@@ -50,7 +50,6 @@ function App() {
   // Auth listener + load saved data
   useEffect(() => {
     if (firebaseSetupError || !auth || !db) {
-      setAuthLoading(false);
       return undefined;
     }
 
@@ -153,7 +152,7 @@ function App() {
   if (authLoading) {
     return (
       <div className="loading-screen">
-        <div className="gradient-text" style={{ fontSize: '2rem', fontFamily: 'Outfit' }}>Initializing...</div>
+        <div className="gradient-text" style={{ fontSize: '2rem', fontFamily: 'Inter' }}>Initializing...</div>
       </div>
     );
   }

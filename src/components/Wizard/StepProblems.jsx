@@ -20,9 +20,9 @@ const StepProblems = ({ formData, updateFormData, prevStep, nextStep }) => {
   ];
 
   const dietControlLevels = [
-    { id: 'strict', icon: '🎯', label: 'Strict — I follow macros precisely' },
-    { id: 'moderate', icon: '⚖️', label: 'Moderate — I eat mostly clean' },
-    { id: 'low', icon: '🍕', label: 'Low — I struggle with diet' }
+    { id: 'strict', label: 'Strict — I follow macros precisely' },
+    { id: 'moderate', label: 'Moderate — I eat mostly clean' },
+    { id: 'low', label: 'Low — I struggle with diet' }
   ];
 
   const sleepOptions = [
@@ -96,7 +96,6 @@ const StepProblems = ({ formData, updateFormData, prevStep, nextStep }) => {
             <div key={level.id}
               className={`selection-card ${formData.dietControl === level.id ? 'active' : ''}`}
               onClick={() => updateFormData('dietControl', level.id)}>
-              <div className="selection-icon">{level.icon}</div>
               <span>{level.label}</span>
             </div>
           ))}

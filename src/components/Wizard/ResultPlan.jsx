@@ -1,7 +1,7 @@
 import React from 'react';
 import { getSafeYoutubeUrl } from '../../utils/url';
 
-const ResultPlan = ({ formData, aiPlan, resetApp }) => {
+const ResultPlan = ({ aiPlan, resetApp }) => {
   if (!aiPlan) return null;
 
   return (
