@@ -9,5 +9,5 @@ npx wrangler secret put DEEPSEEK_API_KEY     # paste your key
 npx wrangler deploy                          # prints https://novafit-ai-proxy.<you>.workers.dev
 ```
 
-Then add the printed URL as the GitHub Actions secret `VITE_AI_PROXY_URL` and
+Then set the printed URL as `VITE_AI_PROXY_URL` in `.github/workflows/firebase-deploy.yml` and
 push to `staging`. For local dev, put it in `.env` as `VITE_AI_PROXY_URL`.
