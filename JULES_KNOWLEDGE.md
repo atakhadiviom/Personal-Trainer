@@ -16,7 +16,7 @@ Your mission as the AI developer (Jules) is to autonomously improve the app base
 ## 🏗️ Architecture & Key Files
 - `src/App.jsx`: Main entry, handles Auth state, routing ('wizard' vs 'dashboard'), and frontend Gemini execution.
 - `src/components/Wizard/`: Contains all onboarding components (`StepBody`, `StepProblems`, `StepGym`, `LoadingAI`).
-- `functions/index.js`: Backend Firebase Functions. Contains `deepseekChat` (AI proxy) and scheduled CRON jobs.
+- `functions/index.js`: Backend Firebase Functions. Contains and scheduled CRON jobs.
 - `firebase.json` & `firestore.rules`: Security, hosting, and database configurations.
 
 ## 🛠️ Coding Standards

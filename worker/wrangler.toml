@@ -1,0 +1,8 @@
+name = "novafit-ai-proxy"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+[vars]
+FIREBASE_PROJECT_ID = "novafit-ai-5be0c"
+# Comma-separated origins allowed to call the proxy
+ALLOWED_ORIGINS = "https://novafit-ai-5be0c.web.app,https://novafit-ai-5be0c.firebaseapp.com,http://localhost:5173"

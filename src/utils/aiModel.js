@@ -1,40 +1,28 @@
-import { httpsCallable } from 'firebase/functions';
-import { functions } from '../firebase';
+import { auth } from '../firebase';
 
-// If VITE_DEEPSEEK_API_KEY is set at build time, call DeepSeek directly from the
-// browser (the key is then visible in the shipped JS). Otherwise use the
-// `deepseekChat` Cloud Function, which keeps the key server-side.
-const DIRECT_KEY = import.meta.env.VITE_DEEPSEEK_API_KEY;
+// AI requests go through the Cloudflare Worker in /worker, which holds the
+// DeepSeek key and only accepts calls with a valid Firebase ID token.
+const PROXY_URL = import.meta.env.VITE_AI_PROXY_URL;
 
-const callDirect = async (prompt) => {
-  const res = await fetch('https://api.deepseek.com/chat/completions', {
+const callProxy = async (prompt) => {
+  if (!PROXY_URL) throw new Error('AI proxy is not configured (VITE_AI_PROXY_URL is missing).');
+  const user = auth?.currentUser;
+  if (!user) throw new Error('Please sign in to use AI features.');
+  const token = await user.getIdToken();
+
+  const res = await fetch(PROXY_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${DIRECT_KEY}` },
-    body: JSON.stringify({
-      model: 'deepseek-chat',
-      messages: [{ role: 'user', content: prompt }],
-      response_format: { type: 'json_object' },
-      max_tokens: 8000,
-    }),
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ prompt }),
   });
   if (!res.ok) {
-    const hint = res.status === 401 ? ' (invalid API key)' : res.status === 402 ? ' (insufficient balance)' : res.status === 429 ? ' (rate limited)' : '';
-    throw new Error(`DeepSeek error ${res.status}${hint}`);
+    let detail = '';
+    try { detail = (await res.json()).error || ''; } catch { /* non-JSON error body */ }
+    throw new Error(`AI request failed (${res.status})${detail ? `: ${detail}` : ''}`);
   }
-  const json = await res.json();
-  const text = json.choices?.[0]?.message?.content;
+  const { text } = await res.json();
   if (!text) throw new Error('Empty AI response');
   return text;
-};
-
-const callFunction = async (prompt) => {
-  const call = httpsCallable(functions, 'deepseekChat', { timeout: 120000 });
-  try {
-    const { data } = await call({ prompt });
-    return data.text;
-  } catch (err) {
-    throw new Error(`AI function unavailable (${err.code || 'unknown'}). It may not be deployed.`);
-  }
 };
 
 const isParseable = (text) => {
@@ -49,10 +37,9 @@ const isParseable = (text) => {
 // Same generateContent(...).response.text() shape the call sites already use.
 export const getAIModel = () => ({
   generateContent: async (prompt) => {
-    const run = () => (DIRECT_KEY ? callDirect(prompt) : callFunction(prompt));
-    let text = await run();
+    let text = await callProxy(prompt);
     // All prompts ask for JSON; retry once if the model returned something unparseable.
-    if (!isParseable(text)) text = await run();
+    if (!isParseable(text)) text = await callProxy(prompt);
     return { response: { text: () => text } };
   },
 });

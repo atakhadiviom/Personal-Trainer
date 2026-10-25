@@ -19,7 +19,7 @@ NovaFit AI is a personalized fitness web app that generates 12-week workout and 
 |-------|------------|
 | Frontend | React 19, Vite 8, Vanilla CSS |
 | Backend | Firebase (Auth, Firestore, Cloud Functions, AI Logic) |
-| AI | DeepSeek (`deepseek-chat`), called only through the `deepseekChat` Cloud Function; key stored as the `DEEPSEEK_API_KEY` Firebase secret |
+| AI | DeepSeek (`deepseek-chat`), called only through the Cloudflare Worker in `worker/`, which holds the key |
 | Charts | Recharts |
 | Health data | Google Fit REST API |
 | Deploy | Firebase Hosting (CI via GitHub Actions on `staging`) |
@@ -93,7 +93,7 @@ src/
     ├── aiService.js        # Plan generation via the AI proxy
     └── googleFitService.js # Google Fit OAuth & data fetching
 functions/
-└── index.js                # Cloud Functions (deepseekChat AI proxy, scheduled jobs)
+└── index.js                # Cloud Functions (scheduled jobs)
 ```
 
 ## Deployment
