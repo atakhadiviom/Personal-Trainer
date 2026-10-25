@@ -342,7 +342,7 @@ CLIENT:
 - Fitness level: ${formData.fitnessLevel || 'beginner'}
 - Age/Sex: ${formData.age} / ${formData.gender}
 - Current weight: ${checkinData.currentWeight || formData.weight}kg
-- Gym access: full gym
+- Training environment: ${formData.trainingEnv || 'full_gym'}
 - Session length: ${formData.sessionLength || '45'} minutes
 - Days per week: ${formData.daysPerWeek || currentSchedule.length}
 

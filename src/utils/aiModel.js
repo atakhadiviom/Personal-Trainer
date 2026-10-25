@@ -4,7 +4,7 @@ import { auth } from '../firebase';
 // DeepSeek key and only accepts calls with a valid Firebase ID token.
 const PROXY_URL = import.meta.env.VITE_AI_PROXY_URL;
 
-const callProxy = async (prompt) => {
+const callProxy = async (prompt, temperature) => {
   if (!PROXY_URL) throw new Error('AI proxy is not configured (VITE_AI_PROXY_URL is missing).');
   const user = auth?.currentUser;
   if (!user) throw new Error('Please sign in to use AI features.');
@@ -13,7 +13,7 @@ const callProxy = async (prompt) => {
   const res = await fetch(PROXY_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ prompt }),
+    body: JSON.stringify({ prompt, temperature }),
   });
   if (!res.ok) {
     let detail = '';
@@ -35,11 +35,12 @@ const isParseable = (text) => {
 };
 
 // Same generateContent(...).response.text() shape the call sites already use.
-export const getAIModel = () => ({
+// temperature: 0 for deterministic maths (calories), ~0.3 for structured plans.
+export const getAIModel = ({ temperature = 0.3 } = {}) => ({
   generateContent: async (prompt) => {
-    let text = await callProxy(prompt);
+    let text = await callProxy(prompt, temperature);
     // All prompts ask for JSON; retry once if the model returned something unparseable.
-    if (!isParseable(text)) text = await callProxy(prompt);
+    if (!isParseable(text)) text = await callProxy(prompt, temperature);
     return { response: { text: () => text } };
   },
 });

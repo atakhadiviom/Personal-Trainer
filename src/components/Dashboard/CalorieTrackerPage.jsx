@@ -126,7 +126,7 @@ const CalorieTrackerPage = ({ formData }) => {
     setLoading(true);
 
     try {
-      const model = getAIModel();
+      const model = getAIModel({ temperature: 0 });
 
       const prompt = `You are a precise nutrition calculator. The user just told you what they ate. Analyze it and return the estimated nutritional breakdown.
 
