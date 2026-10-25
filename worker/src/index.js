@@ -38,54 +38,65 @@ const DEFAULT_ORIGINS = [
 const json = (body, status, cors) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', ...cors } });
 
+const route = async (request, env) => {
+  const origin = request.headers.get('Origin') || '';
+  const configured = (env.ALLOWED_ORIGINS || '').split(',').map((o) => o.trim().replace(/\/$/, '')).filter(Boolean);
+  const allowed = [...new Set([...DEFAULT_ORIGINS, ...configured])];
+  const cors = allowed.includes(origin)
+    ? { 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Headers': 'Authorization, Content-Type', 'Access-Control-Allow-Methods': 'POST, OPTIONS', Vary: 'Origin' }
+    : {};
+
+  // Health check: open the Worker URL in a browser to confirm this version is deployed.
+  if (request.method === 'GET') {
+    return json({ ok: true, service: 'novafit-ai-proxy', hasKey: Boolean(env.DEEPSEEK_API_KEY), allowedOrigins: allowed }, 200, cors);
+  }
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
+  if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405, cors);
+  if (!allowed.includes(origin)) return json({ error: 'Origin not allowed' }, 403, cors);
+
+  const auth = request.headers.get('Authorization') || '';
+  try {
+    await verifyFirebaseToken(auth.replace(/^Bearer /, ''), env.FIREBASE_PROJECT_ID);
+  } catch {
+    return json({ error: 'Unauthenticated' }, 401, cors);
+  }
+
+  let prompt;
+  try {
+    ({ prompt } = await request.json());
+  } catch {
+    return json({ error: 'Invalid JSON body' }, 400, cors);
+  }
+  if (typeof prompt !== 'string' || !prompt.trim() || prompt.length > 20000) {
+    return json({ error: 'prompt (string, max 20000 chars) required' }, 400, cors);
+  }
+
+  const res = await fetch('https://api.deepseek.com/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${env.DEEPSEEK_API_KEY}` },
+    body: JSON.stringify({
+      model: 'deepseek-chat',
+      messages: [{ role: 'user', content: prompt }],
+      response_format: { type: 'json_object' },
+      max_tokens: 8000,
+    }),
+  });
+  if (!res.ok) return json({ error: `DeepSeek error ${res.status}` }, 502, cors);
+  const data = await res.json();
+  const text = data.choices?.[0]?.message?.content;
+  if (!text) return json({ error: 'Empty AI response' }, 502, cors);
+  return json({ text }, 200, cors);
+};
+
 export default {
   async fetch(request, env) {
-    const origin = request.headers.get('Origin') || '';
-    const configured = (env.ALLOWED_ORIGINS || '').split(',').map((o) => o.trim().replace(/\/$/, '')).filter(Boolean);
-    const allowed = [...new Set([...DEFAULT_ORIGINS, ...configured])];
-    const cors = allowed.includes(origin)
-      ? { 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Headers': 'Authorization, Content-Type', 'Access-Control-Allow-Methods': 'POST, OPTIONS', Vary: 'Origin' }
-      : {};
-
-    // Health check: open the Worker URL in a browser to confirm this version is deployed.
-    if (request.method === 'GET') {
-      return json({ ok: true, service: 'novafit-ai-proxy', hasKey: Boolean(env.DEEPSEEK_API_KEY), allowedOrigins: allowed }, 200, cors);
-    }
-    if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
-    if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405, cors);
-    if (!allowed.includes(origin)) return json({ error: 'Origin not allowed' }, 403, cors);
-
-    const auth = request.headers.get('Authorization') || '';
     try {
-      await verifyFirebaseToken(auth.replace(/^Bearer /, ''), env.FIREBASE_PROJECT_ID);
-    } catch {
-      return json({ error: 'Unauthenticated' }, 401, cors);
+      return await route(request, env);
+    } catch (err) {
+      // Surface crashes as JSON (with CORS) instead of Cloudflare's opaque 1101 page.
+      const origin = request.headers.get('Origin') || '';
+      const cors = DEFAULT_ORIGINS.includes(origin) ? { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' } : {};
+      return json({ error: `Worker error: ${err && err.message ? err.message : String(err)}` }, 500, cors);
     }
-
-    let prompt;
-    try {
-      ({ prompt } = await request.json());
-    } catch {
-      return json({ error: 'Invalid JSON body' }, 400, cors);
-    }
-    if (typeof prompt !== 'string' || !prompt.trim() || prompt.length > 20000) {
-      return json({ error: 'prompt (string, max 20000 chars) required' }, 400, cors);
-    }
-
-    const res = await fetch('https://api.deepseek.com/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${env.DEEPSEEK_API_KEY}` },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages: [{ role: 'user', content: prompt }],
-        response_format: { type: 'json_object' },
-        max_tokens: 8000,
-      }),
-    });
-    if (!res.ok) return json({ error: `DeepSeek error ${res.status}` }, 502, cors);
-    const data = await res.json();
-    const text = data.choices?.[0]?.message?.content;
-    if (!text) return json({ error: 'Empty AI response' }, 502, cors);
-    return json({ text }, 200, cors);
   },
 };
