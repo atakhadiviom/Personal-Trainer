@@ -49,3 +49,5 @@ jobs:
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_NOVAFIT_AI_5BE0C }}'
           channelId: live
           projectId: novafit-ai-5be0c
+          # Pinned: firebase-tools >=15.34 checks Service Usage, which this service account can't read
+          firebaseToolsVersion: 15.19.0
