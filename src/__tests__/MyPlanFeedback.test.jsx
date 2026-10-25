@@ -38,8 +38,8 @@ const mockGenerateContent = vi.fn(() => Promise.resolve({
   }
 }));
 
-vi.mock('firebase/ai', () => ({
-  getGenerativeModel: vi.fn(() => ({
+vi.mock('../utils/aiModel', () => ({
+  getAIModel: vi.fn(() => ({
     generateContent: mockGenerateContent
   })),
 }));

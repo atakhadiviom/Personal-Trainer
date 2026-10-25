@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import MyPlan from '../components/Dashboard/MyPlan';
-import { getGenerativeModel } from 'firebase/ai';
+import { getAIModel } from '../utils/aiModel';
 
 // Mock dependencies
 vi.mock('../firebase', () => {
@@ -21,8 +21,8 @@ vi.mock('firebase/firestore', () => {
   };
 });
 
-vi.mock('firebase/ai', () => ({
-  getGenerativeModel: vi.fn(),
+vi.mock('../utils/aiModel', () => ({
+  getAIModel: vi.fn(),
 }));
 
 // Mock utils
@@ -58,7 +58,7 @@ describe('MyPlan Error Paths', () => {
 
   it('handles AI swap error gracefully', async () => {
     // Setup AI to throw
-    getGenerativeModel.mockReturnValue({
+    getAIModel.mockReturnValue({
       generateContent: vi.fn().mockRejectedValue(new Error('AI generation failed'))
     });
 

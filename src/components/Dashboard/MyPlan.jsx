@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { auth, db, aiInstance } from '../../firebase';
+import { auth, db } from '../../firebase';
 import ExerciseRow from './ExerciseRow';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { getGenerativeModel } from 'firebase/ai';
+import { getAIModel } from '../../utils/aiModel';
 import * as googleFit from '../../utils/googleFitService';
 import { getSafeYoutubeUrl } from '../../utils/url';
 
@@ -230,10 +230,7 @@ const MyPlan = ({ formData, aiPlan }) => {
     const swapKey = `${dayIdx}_${exIdx}`;
     setSwapping(swapKey);
     try {
-      const model = getGenerativeModel(aiInstance, {
-        model: 'gemini-3-flash-preview',
-        generationConfig: { responseMimeType: 'application/json' }
-      });
+      const model = getAIModel();
       const prompt = `You are a certified personal trainer. The client wants to swap "${exName}" for an alternative exercise that targets the EXACT same muscle group(s).
 Client info: ${formData.fitnessLevel || 'beginner'} level, training in a ${formData.trainingEnv || 'full gym'}.
 ${formData.injuryAreas?.length > 0 ? `Avoid stressing: ${formData.injuryAreas.join(', ')}` : ''}
@@ -335,10 +332,7 @@ Return ONLY this JSON (no markdown):
       const lastWeekWeights = {};
       currentSchedule.forEach(d => d.exercises.forEach(e => { lastWeekWeights[e.name] = e.weight; }));
 
-      const model = getGenerativeModel(aiInstance, {
-        model: 'gemini-3-flash-preview',
-        generationConfig: { responseMimeType: 'application/json' }
-      });
+      const model = getAIModel();
 
       const buildPrompt = (retryFeedback = '') => `You are an expert personal trainer generating Week ${selectedWeek + 1} of a 12-week plan.
 

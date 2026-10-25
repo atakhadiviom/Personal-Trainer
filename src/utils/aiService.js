@@ -1,11 +1,7 @@
-import { getGenerativeModel } from 'firebase/ai';
-import { aiInstance } from '../firebase';
+import { getAIModel } from './aiModel';
 
 export const generateWorkoutPlan = async (formData) => {
-  const model = getGenerativeModel(aiInstance, {
-    model: "gemini-3-flash-preview",
-    generationConfig: { responseMimeType: "application/json" }
-  });
+  const model = getAIModel();
 
   const injuryList = (formData.injuryAreas || []).filter(i => i !== 'none').join(', ');
   const prompt = `You are an elite, certified personal trainer creating a hyper-personalized 12-week fitness program.

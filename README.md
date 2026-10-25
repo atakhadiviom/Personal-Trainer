@@ -1,6 +1,6 @@
 # NovaFit AI
 
-NovaFit AI is a personalized fitness web app that generates 12-week workout and nutrition plans using Google Gemini. Users complete a short onboarding wizard, and the AI builds a plan tailored to their body, goals, injuries, diet, and gym schedule.
+NovaFit AI is a personalized fitness web app that generates 12-week workout and nutrition plans using DeepSeek. Users complete a short onboarding wizard, and the AI builds a plan tailored to their body, goals, injuries, diet, and gym schedule.
 
 ## Features
 
@@ -8,7 +8,7 @@ NovaFit AI is a personalized fitness web app that generates 12-week workout and 
 - **Nutrition guidance** — Macro targets and meal suggestions aligned with diet preferences and goals
 - **Onboarding wizard** — Three steps: body stats & goals, health/injuries, gym & schedule
 - **My Plan dashboard** — Weekly workout view, exercise completion tracking, weekly check-ins, and AI plan adjustments
-- **Calorie tracker** — Chat-style meal logging; Gemini estimates calories and macros from natural language
+- **Calorie tracker** — Chat-style meal logging; DeepSeek estimates calories and macros from natural language
 - **Google Fit integration** — Steps, calories burned, heart rate, and sleep synced into the Health tab
 - **Firebase auth** — Email/password and Google sign-in
 - **PWA** — Installable on mobile with offline-friendly caching via Workbox
@@ -19,7 +19,7 @@ NovaFit AI is a personalized fitness web app that generates 12-week workout and 
 |-------|------------|
 | Frontend | React 19, Vite 8, Vanilla CSS |
 | Backend | Firebase (Auth, Firestore, Cloud Functions, AI Logic) |
-| AI | Google Gemini (`gemini-3-flash-preview` client-side, `gemini-2.0-flash` in Cloud Functions) |
+| AI | DeepSeek (`deepseek-chat`), called only through the `deepseekChat` Cloud Function; key stored as the `DEEPSEEK_API_KEY` Firebase secret |
 | Charts | Recharts |
 | Health data | Google Fit REST API |
 | Deploy | Firebase Hosting (CI via GitHub Actions on `staging`) |
@@ -90,10 +90,10 @@ src/
 │   ├── Dashboard/          # My Plan, Calories, Health, Profile tabs
 │   └── Layout/             # Navbar, ErrorBoundary
 └── utils/
-    ├── aiService.js        # Client-side Gemini plan generation
+    ├── aiService.js        # Plan generation via the AI proxy
     └── googleFitService.js # Google Fit OAuth & data fetching
 functions/
-└── index.js                # Cloud Functions (generateNovaFitPlan, scheduled jobs)
+└── index.js                # Cloud Functions (deepseekChat AI proxy, scheduled jobs)
 ```
 
 ## Deployment

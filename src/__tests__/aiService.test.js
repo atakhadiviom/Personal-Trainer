@@ -1,11 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { generateWorkoutPlan } from '../utils/aiService';
-import { getGenerativeModel } from 'firebase/ai';
-import { aiInstance } from '../firebase';
+import { getAIModel } from '../utils/aiModel';
 
 let mockResponseText = "";
-vi.mock('firebase/ai', () => ({
-  getGenerativeModel: vi.fn(() => ({
+vi.mock('../utils/aiModel', () => ({
+  getAIModel: vi.fn(() => ({
     generateContent: vi.fn().mockImplementation(async () => ({
       response: { text: () => mockResponseText }
     }))
@@ -74,19 +73,16 @@ describe('generateWorkoutPlan', () => {
     vi.clearAllMocks();
   });
 
-  it('uses gemini-3-flash-preview with JSON response mode', async () => {
+  it('requests a model from the AI proxy', async () => {
     mockResponseText = JSON.stringify(validResponseJson);
     await generateWorkoutPlan(mockFormData);
-    expect(getGenerativeModel).toHaveBeenCalledWith(aiInstance, {
-      model: "gemini-3-flash-preview",
-      generationConfig: { responseMimeType: "application/json" }
-    });
+    expect(getAIModel).toHaveBeenCalledTimes(1);
   });
 
   it('includes injury areas in the prompt', async () => {
     mockResponseText = JSON.stringify(validResponseJson);
     const mockGenerate = vi.fn().mockResolvedValue({ response: { text: () => mockResponseText } });
-    getGenerativeModel.mockReturnValue({ generateContent: mockGenerate });
+    getAIModel.mockReturnValue({ generateContent: mockGenerate });
 
     await generateWorkoutPlan(mockFormData);
 
@@ -98,7 +94,7 @@ describe('generateWorkoutPlan', () => {
   it('handles empty injury areas array', async () => {
     mockResponseText = JSON.stringify(validResponseJson);
     const mockGenerate = vi.fn().mockResolvedValue({ response: { text: () => mockResponseText } });
-    getGenerativeModel.mockReturnValue({ generateContent: mockGenerate });
+    getAIModel.mockReturnValue({ generateContent: mockGenerate });
 
     await generateWorkoutPlan({ ...mockFormData, injuryAreas: [] });
 

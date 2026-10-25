@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 const slides = [
   {
     title: 'Your AI Personal Trainer',
-    body: 'NovaFit builds a fully personalized 12-week gym plan around your body, goals, and schedule — powered by Gemini AI.',
+    body: 'NovaFit builds a fully personalized 12-week gym plan around your body, goals, and schedule — powered by AI.',
   },
   {
     title: 'A Plan That Adapts To You',

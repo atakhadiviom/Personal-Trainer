@@ -1,95 +1,59 @@
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
-const { GoogleGenerativeAI, SchemaType } = require("@google/generative-ai");
+const { defineSecret } = require("firebase-functions/params");
 const admin = require("firebase-admin");
+
+const DEEPSEEK_API_KEY = defineSecret("DEEPSEEK_API_KEY");
 
 admin.initializeApp();
 
 /**
- * AI Generation Endpoint
- * Process Gemini requests securely on the backend.
+ * AI proxy: forwards a prompt to DeepSeek and returns the text.
+ * The API key is a Firebase secret and never reaches the client.
+ *   firebase functions:secrets:set DEEPSEEK_API_KEY
  */
-exports.generateNovaFitPlan = onCall(async (request) => {
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "User must be logged in to generate a plan.");
-  }
-
-  const formData = request.data.formData || {};
-  const apiKey = process.env.GEMINI_API_KEY || "YOUR_GEMINI_KEY_HERE";
-  
-  if (apiKey === "YOUR_GEMINI_KEY_HERE") {
-    throw new HttpsError("internal", "Server missing Gemini API Key. Developer needs to configure the backend environment variable.");
-  }
-
-  const genAI = new GoogleGenerativeAI(apiKey);
-  
-  const schema = {
-    type: SchemaType.OBJECT,
-    properties: {
-      overview: { type: SchemaType.STRING },
-      nutrition: {
-        type: SchemaType.OBJECT,
-        properties: {
-          calories: { type: SchemaType.NUMBER },
-          protein: { type: SchemaType.NUMBER },
-          carbs: { type: SchemaType.NUMBER },
-          fat: { type: SchemaType.NUMBER },
-          meals: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } }
-        }
-      },
-      progression: {
-        type: SchemaType.ARRAY,
-        items: {
-          type: SchemaType.OBJECT,
-          properties: {
-             phase: { type: SchemaType.STRING },
-             focus: { type: SchemaType.STRING }
-          }
-        }
-      },
-      workout: {
-        type: SchemaType.OBJECT,
-        properties: {
-          schedule: {
-            type: SchemaType.ARRAY,
-            items: {
-              type: SchemaType.OBJECT,
-              properties: {
-                id: { type: SchemaType.STRING },
-                label: { type: SchemaType.STRING },
-                warmup: { type: SchemaType.ARRAY, items: { type: SchemaType.OBJECT, properties: { name: { type: SchemaType.STRING }, duration: { type: SchemaType.STRING } } } },
-                exercises: { type: SchemaType.ARRAY, items: { type: SchemaType.OBJECT, properties: { name: { type: SchemaType.STRING }, sets: { type: SchemaType.NUMBER }, reps: { type: SchemaType.STRING }, rest: { type: SchemaType.STRING }, weight: { type: SchemaType.STRING } } } },
-                cooldown: { type: SchemaType.ARRAY, items: { type: SchemaType.OBJECT, properties: { name: { type: SchemaType.STRING }, duration: { type: SchemaType.STRING } } } }
-              }
-            }
-          }
-        }
-      },
-      mindset: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } }
+exports.deepseekChat = onCall(
+  { secrets: [DEEPSEEK_API_KEY], timeoutSeconds: 120, maxInstances: 10 },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "User must be logged in.");
     }
-  };
-
-  const model = genAI.getGenerativeModel({
-    model: "gemini-2.0-flash",
-    generationConfig: {
-      responseMimeType: "application/json",
-      responseSchema: schema,
+    const prompt = request.data && request.data.prompt;
+    if (typeof prompt !== "string" || !prompt.trim() || prompt.length > 20000) {
+      throw new HttpsError("invalid-argument", "A prompt string (max 20000 chars) is required.");
     }
-  });
 
-  const prompt = `You are a professional, aggressive AI Gym Trainer. Create a highly specific 12-week plan for a ${formData.age}yo ${formData.gender}, ${formData.weight}kg, ${formData.height}cm. Goal: ${formData.goal}. Limitations: ${formData.problems}. Gym: ${formData.gymName}. Create an exact, structured 4-day workout schedule with exact weights to start with, warmups, and cool-downs. Return only valid JSON.`;
+    let res;
+    try {
+      res = await fetch("https://api.deepseek.com/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${DEEPSEEK_API_KEY.value()}`,
+        },
+        body: JSON.stringify({
+          model: "deepseek-chat",
+          messages: [{ role: "user", content: prompt }],
+          response_format: { type: "json_object" },
+          max_tokens: 8000,
+        }),
+      });
+    } catch (err) {
+      console.error("DeepSeek request failed", err);
+      throw new HttpsError("unavailable", "AI service unreachable.");
+    }
 
-  try {
-    const result = await model.generateContent(prompt);
-    return JSON.parse(result.response.text());
-  } catch (error) {
-    throw new HttpsError("internal", "Gemini Generation Failed: " + error.message);
+    if (!res.ok) {
+      console.error("DeepSeek error", res.status, await res.text());
+      throw new HttpsError("internal", `AI service error (${res.status}).`);
+    }
+    const json = await res.json();
+    const text = json.choices && json.choices[0] && json.choices[0].message && json.choices[0].message.content;
+    if (!text) throw new HttpsError("internal", "Empty AI response.");
+    return { text };
   }
-});
+);
 
-/**
- * Daily Workout Nudge (Runs every morning at 8:00 AM)
- */
 exports.dailyWorkoutNudge = onSchedule("0 8 * * *", async () => {
   const BATCH_SIZE = 500;
   let lastDoc = null;

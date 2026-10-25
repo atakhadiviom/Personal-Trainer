@@ -20,8 +20,8 @@ vi.mock('firebase/firestore', () => {
 });
 
 const generateContentMock = vi.fn();
-vi.mock('firebase/ai', () => ({
-  getGenerativeModel: vi.fn(() => ({
+vi.mock('../utils/aiModel', () => ({
+  getAIModel: vi.fn(() => ({
     generateContent: generateContentMock
   })),
 }));

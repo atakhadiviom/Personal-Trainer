@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import MyPlan from '../components/Dashboard/MyPlan';
-import * as aiModule from 'firebase/ai';
+import * as aiModule from '../utils/aiModel';
 
 // Mock dependencies
 vi.mock('../firebase', () => {
@@ -26,8 +26,8 @@ vi.mock('firebase/firestore', () => {
     updateDoc: vi.fn(() => Promise.resolve()),
   };
 });
-vi.mock('firebase/ai', () => ({
-  getGenerativeModel: vi.fn(),
+vi.mock('../utils/aiModel', () => ({
+  getAIModel: vi.fn(),
 }));
 vi.mock('../utils/googleFitService', () => ({
   getToken: vi.fn(() => null),
@@ -60,8 +60,8 @@ describe('MyPlan AI Check-in failure', () => {
   });
 
   it('displays error message when AI check-in generation fails', async () => {
-    // Mock getGenerativeModel to throw an error when generateContent is called
-    aiModule.getGenerativeModel.mockReturnValue({
+    // Mock getAIModel to throw an error when generateContent is called
+    aiModule.getAIModel.mockReturnValue({
       generateContent: vi.fn().mockRejectedValue(new Error('AI generation failed'))
     });
 

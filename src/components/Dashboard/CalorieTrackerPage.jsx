@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { auth, db, aiInstance } from '../../firebase';
+import { auth, db } from '../../firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { getGenerativeModel } from 'firebase/ai';
+import { getAIModel } from '../../utils/aiModel';
 import * as googleFit from '../../utils/googleFitService';
 
 const CalorieTrackerPage = ({ formData }) => {
@@ -126,10 +126,7 @@ const CalorieTrackerPage = ({ formData }) => {
     setLoading(true);
 
     try {
-      const model = getGenerativeModel(aiInstance, {
-        model: "gemini-3-flash-preview",
-        generationConfig: { responseMimeType: "application/json" }
-      });
+      const model = getAIModel();
 
       const prompt = `You are a precise nutrition calculator. The user just told you what they ate. Analyze it and return the estimated nutritional breakdown.
 

@@ -22,8 +22,8 @@ vi.mock('firebase/firestore', () => {
     updateDoc: vi.fn(() => Promise.resolve()),
   };
 });
-vi.mock('firebase/ai', () => ({
-  getGenerativeModel: vi.fn(),
+vi.mock('../utils/aiModel', () => ({
+  getAIModel: vi.fn(),
 }));
 vi.mock('../utils/googleFitService', () => ({
   getToken: vi.fn(() => null),
