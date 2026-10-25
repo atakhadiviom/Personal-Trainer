@@ -100,7 +100,7 @@ function App() {
       setAiPlan(generated);
       setActiveTab('plan');
     } catch (err) {
-      console.error("Firebase AI Logic failed:", err);
+      console.error("AI plan generation failed:", err);
       setStep(0); // reset to show error
       setAiError(err.message || "AI generation failed. Please try again.");
     }
@@ -121,7 +121,7 @@ function App() {
           <div style={{ fontSize: '3rem', marginBottom: '16px' }}>⚠️</div>
           <h2 className="step-title" style={{ color: '#ff6b6b' }}>AI Generation Failed</h2>
           <p className="step-subtitle" style={{ marginBottom: '8px' }}>{aiError}</p>
-          <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem', marginBottom: '24px' }}>This usually means the Vertex AI quota was exceeded or the service is temporarily unavailable.</p>
+          <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem', marginBottom: '24px' }}>The AI service could not be reached or returned an unusable answer. Retry in a moment; if it keeps failing, the service may be misconfigured.</p>
           <div className="btn-group" style={{ justifyContent: 'center', gap: '12px' }}>
             <button className="btn-primary" onClick={generatePlan}>🔄 Retry Generation</button>
             <button className="btn-secondary" onClick={() => { setStep(3); setAiError(null); }}>← Back to Wizard</button>

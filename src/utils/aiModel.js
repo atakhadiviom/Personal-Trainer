@@ -17,7 +17,10 @@ const callDirect = async (prompt) => {
       max_tokens: 8000,
     }),
   });
-  if (!res.ok) throw new Error(`DeepSeek error ${res.status}`);
+  if (!res.ok) {
+    const hint = res.status === 401 ? ' (invalid API key)' : res.status === 402 ? ' (insufficient balance)' : res.status === 429 ? ' (rate limited)' : '';
+    throw new Error(`DeepSeek error ${res.status}${hint}`);
+  }
   const json = await res.json();
   const text = json.choices?.[0]?.message?.content;
   if (!text) throw new Error('Empty AI response');
@@ -26,14 +29,30 @@ const callDirect = async (prompt) => {
 
 const callFunction = async (prompt) => {
   const call = httpsCallable(functions, 'deepseekChat', { timeout: 120000 });
-  const { data } = await call({ prompt });
-  return data.text;
+  try {
+    const { data } = await call({ prompt });
+    return data.text;
+  } catch (err) {
+    throw new Error(`AI function unavailable (${err.code || 'unknown'}). It may not be deployed.`);
+  }
+};
+
+const isParseable = (text) => {
+  try {
+    JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1));
+    return true;
+  } catch {
+    return false;
+  }
 };
 
 // Same generateContent(...).response.text() shape the call sites already use.
 export const getAIModel = () => ({
   generateContent: async (prompt) => {
-    const text = await (DIRECT_KEY ? callDirect(prompt) : callFunction(prompt));
+    const run = () => (DIRECT_KEY ? callDirect(prompt) : callFunction(prompt));
+    let text = await run();
+    // All prompts ask for JSON; retry once if the model returned something unparseable.
+    if (!isParseable(text)) text = await run();
     return { response: { text: () => text } };
   },
 });
