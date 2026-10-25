@@ -3,11 +3,40 @@ import { auth } from '../../firebase';
 import { signOut } from 'firebase/auth';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import * as googleFit from '../../utils/googleFitService';
+import { deleteAccount, exportUserData } from '../../utils/accountData';
 
 const ProfilePage = ({ formData, user, resetWizard }) => {
   const currentUser = user || auth.currentUser;
 
   const handleSignOut = () => signOut(auth);
+  const [dataBusy, setDataBusy] = useState(false);
+  const [dataError, setDataError] = useState(null);
+
+  const handleExport = async () => {
+    if (!currentUser) return;
+    setDataError(null);
+    setDataBusy(true);
+    try {
+      await exportUserData(currentUser);
+    } catch (err) {
+      setDataError(`Export failed: ${err.message}`);
+    } finally {
+      setDataBusy(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!currentUser) return;
+    if (!window.confirm('Delete your NovaFit account and all your data? This cannot be undone.')) return;
+    setDataError(null);
+    setDataBusy(true);
+    try {
+      await deleteAccount(currentUser);
+    } catch (err) {
+      setDataError(`Delete failed: ${err.message}`);
+      setDataBusy(false);
+    }
+  };
   const [dynamicTDEE, setDynamicTDEE] = useState(null);
   useEffect(() => {
     const fetchTDEE = async () => {
@@ -83,9 +112,16 @@ const ProfilePage = ({ formData, user, resetWizard }) => {
             <button className="btn-primary" style={{ width: '100%' }} onClick={resetWizard}>
               ↻ Recalibrate — Regenerate My Plan
             </button>
+            <button className="btn-secondary" style={{ width: '100%' }} onClick={handleExport} disabled={dataBusy || !currentUser}>
+              Export my data (JSON)
+            </button>
             <button className="btn-secondary" style={{ width: '100%', color: '#ff6b6b', borderColor: 'rgba(255,107,107,0.3)' }} onClick={handleSignOut}>
               Sign Out
             </button>
+            <button className="btn-secondary" style={{ width: '100%', color: '#ff6b6b', borderColor: 'rgba(255,107,107,0.3)' }} onClick={handleDelete} disabled={dataBusy || !currentUser}>
+              {dataBusy ? 'Working…' : 'Delete my account and data'}
+            </button>
+            {dataError && <p role="alert" style={{ color: '#ff6b6b', fontSize: '0.9rem' }}>{dataError}</p>}
           </div>
         </div>
       </div>
