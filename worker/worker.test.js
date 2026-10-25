@@ -27,8 +27,20 @@ describe('AI proxy worker', () => {
     expect(res.status).toBe(401);
   });
 
-  it('rejects non-POST methods', async () => {
+  it('allows the built-in origins even if ALLOWED_ORIGINS is missing', async () => {
+    const res = await worker.fetch(
+      req({ method: 'OPTIONS', body: undefined, headers: { Origin: 'https://novafit-ai-5be0c.web.app' } }),
+      { FIREBASE_PROJECT_ID: 'demo' }
+    );
+    expect(res.status).toBe(204);
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBe('https://novafit-ai-5be0c.web.app');
+  });
+
+  it('serves a health check on GET', async () => {
     const res = await worker.fetch(req({ method: 'GET', body: undefined }), env);
-    expect(res.status).toBe(405);
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(body.ok).toBe(true);
+    expect(body.hasKey).toBe(true);
   });
 });

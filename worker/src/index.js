@@ -29,17 +29,28 @@ async function verifyFirebaseToken(token, projectId) {
   return payload;
 }
 
+const DEFAULT_ORIGINS = [
+  'https://novafit-ai-5be0c.web.app',
+  'https://novafit-ai-5be0c.firebaseapp.com',
+  'http://localhost:5173',
+];
+
 const json = (body, status, cors) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', ...cors } });
 
 export default {
   async fetch(request, env) {
     const origin = request.headers.get('Origin') || '';
-    const allowed = (env.ALLOWED_ORIGINS || '').split(',').map((o) => o.trim());
+    const configured = (env.ALLOWED_ORIGINS || '').split(',').map((o) => o.trim().replace(/\/$/, '')).filter(Boolean);
+    const allowed = [...new Set([...DEFAULT_ORIGINS, ...configured])];
     const cors = allowed.includes(origin)
       ? { 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Headers': 'Authorization, Content-Type', 'Access-Control-Allow-Methods': 'POST, OPTIONS', Vary: 'Origin' }
       : {};
 
+    // Health check: open the Worker URL in a browser to confirm this version is deployed.
+    if (request.method === 'GET') {
+      return json({ ok: true, service: 'novafit-ai-proxy', hasKey: Boolean(env.DEEPSEEK_API_KEY), allowedOrigins: allowed }, 200, cors);
+    }
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
     if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405, cors);
     if (!allowed.includes(origin)) return json({ error: 'Origin not allowed' }, 403, cors);
