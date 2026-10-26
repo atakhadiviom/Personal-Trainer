@@ -6,7 +6,6 @@ import { onAuthStateChanged, signOut, getRedirectResult } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 import { generateWorkoutPlan } from './utils/aiService';
-import { generateAIGymPlan } from './utils/aiMock';
 
 import Login from './components/Auth/Login';
 import Onboarding from './components/Onboarding';
@@ -94,19 +93,10 @@ function App() {
     try {
       generated = await generateWorkoutPlan(formData);
     } catch (err) {
-      // AI unavailable: fall back to the built-in template generator so the user still gets a plan.
-      console.error("AI plan generation failed, using built-in plan:", err);
-      try {
-        generated = generateAIGymPlan(formData);
-        if (generated?.overview) {
-          generated.overview.specialNote = `Built-in template plan (AI was unavailable: ${err.message || 'unknown error'}). ${generated.overview.specialNote || ''}`.trim();
-        }
-      } catch (fallbackErr) {
-        console.error("Built-in plan failed:", fallbackErr);
-        setStep(0); // reset to show error
-        setAiError(err.message || "AI generation failed. Please try again.");
-        return;
-      }
+      console.error("AI plan generation failed:", err);
+      setStep(0); // reset to show error
+      setAiError(err.message || "AI generation failed. Please try again.");
+      return;
     }
 
     try {
