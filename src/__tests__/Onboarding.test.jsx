@@ -66,7 +66,7 @@ describe('Onboarding Component', () => {
     await waitFor(() => {
       expect(screen.getByText("Let's Build Your Body")).toBeInTheDocument();
       expect(screen.getByText('4 / 4')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Get Started 🚀/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Get Started/i })).toBeInTheDocument();
     });
 
     // Skip button should not be present on the last slide
@@ -90,7 +90,7 @@ describe('Onboarding Component', () => {
     }
 
     // Click Get Started
-    await user.click(screen.getByRole('button', { name: /Get Started 🚀/i }));
+    await user.click(screen.getByRole('button', { name: /Get Started/i }));
 
     expect(mockOnFinish).toHaveBeenCalledTimes(1);
   });

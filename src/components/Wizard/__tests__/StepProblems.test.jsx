@@ -31,7 +31,7 @@ describe('StepProblems', () => {
     );
 
     expect(screen.getByText('Health, Diet & Lifestyle')).toBeInTheDocument();
-    expect(screen.getByText('🔙 Lower Back')).toBeInTheDocument();
+    expect(screen.getByText('Lower Back')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('e.g., recovering from ACL surgery, asthma, high blood pressure...')).toBeInTheDocument();
     expect(screen.getByText('Vegetarian')).toBeInTheDocument();
     expect(screen.getByText('Moderate — I eat mostly clean')).toBeInTheDocument();
@@ -49,7 +49,7 @@ describe('StepProblems', () => {
       />
     );
 
-    const backInjury = screen.getByText('🔙 Lower Back');
+    const backInjury = screen.getByText('Lower Back');
     await user.click(backInjury);
 
     expect(mockUpdateFormData).toHaveBeenCalledWith('injuryAreas', ['back']);
@@ -66,7 +66,7 @@ describe('StepProblems', () => {
       />
     );
 
-    const noIssues = screen.getByText('✅ No Issues');
+    const noIssues = screen.getByText('No Issues');
     await user.click(noIssues);
 
     expect(mockUpdateFormData).toHaveBeenCalledWith('injuryAreas', ['none']);
@@ -83,7 +83,7 @@ describe('StepProblems', () => {
       />
     );
 
-    const backInjury = screen.getByText('🔙 Lower Back');
+    const backInjury = screen.getByText('Lower Back');
     await user.click(backInjury);
 
     expect(mockUpdateFormData).toHaveBeenCalledWith('injuryAreas', ['knees']);
@@ -100,7 +100,7 @@ describe('StepProblems', () => {
       />
     );
 
-    const backInjury = screen.getByText('🔙 Lower Back');
+    const backInjury = screen.getByText('Lower Back');
     await user.click(backInjury);
 
     expect(mockUpdateFormData).toHaveBeenCalledWith('injuryAreas', ['back']);
@@ -203,7 +203,7 @@ describe('StepProblems', () => {
       />
     );
 
-    const backButton = screen.getByRole('button', { name: /back/i });
+    const backButton = screen.getByRole('button', { name: /^← back$/i });
     await user.click(backButton);
 
     expect(mockPrevStep).toHaveBeenCalledTimes(1);
@@ -227,7 +227,7 @@ describe('StepProblems', () => {
       />
     );
 
-    const kneesCard = screen.getByText('🦵 Knees').closest('.selection-card');
+    const kneesCard = screen.getByText('Knees').closest('.selection-card');
     const ketoCard = screen.getByText('Keto / Low Carb').closest('.selection-card');
     const strictCard = screen.getByText('Strict — I follow macros precisely').closest('.selection-card');
     const more8Card = screen.getByText('8+ hours').closest('.selection-card');
@@ -237,7 +237,7 @@ describe('StepProblems', () => {
     expect(strictCard).toHaveClass('active');
     expect(more8Card).toHaveClass('active');
 
-    const backCard = screen.getByText('🔙 Lower Back').closest('.selection-card');
+    const backCard = screen.getByText('Lower Back').closest('.selection-card');
     expect(backCard).not.toHaveClass('active');
   });
 });

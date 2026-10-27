@@ -1,13 +1,14 @@
 import React from 'react';
+import Icon from '../Layout/Icon';
 
 const StepProblems = ({ formData, updateFormData, prevStep, nextStep }) => {
   const commonInjuries = [
-    { id: 'back', label: '🔙 Lower Back' },
-    { id: 'knees', label: '🦵 Knees' },
-    { id: 'shoulders', label: '💪 Shoulders' },
-    { id: 'wrists', label: '🤚 Wrists' },
-    { id: 'neck', label: '🧣 Neck' },
-    { id: 'none', label: '✅ No Issues' }
+    { id: 'back', label: 'Lower Back', icon: 'spine' },
+    { id: 'knees', label: 'Knees', icon: 'knee' },
+    { id: 'shoulders', label: 'Shoulders', icon: 'dumbbell' },
+    { id: 'wrists', label: 'Wrists', icon: 'hand' },
+    { id: 'neck', label: 'Neck', icon: 'neck' },
+    { id: 'none', label: 'No Issues', icon: 'checkCircle' }
   ];
 
   const dietOptions = [
@@ -59,7 +60,10 @@ const StepProblems = ({ formData, updateFormData, prevStep, nextStep }) => {
           {commonInjuries.map(injury => (
             <div key={injury.id}
               className={`selection-card ${(formData.injuryAreas || []).includes(injury.id) ? 'active' : ''}`}
+              role="button" tabIndex={0} aria-pressed={!!((formData.injuryAreas || []).includes(injury.id))}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); (() => toggleInjury(injury.id))(); } }}
               onClick={() => toggleInjury(injury.id)}>
+              {injury.icon && <Icon name={injury.icon} />}
               <span>{injury.label}</span>
             </div>
           ))}
@@ -82,6 +86,8 @@ const StepProblems = ({ formData, updateFormData, prevStep, nextStep }) => {
           {dietOptions.map(diet => (
             <div key={diet.id}
               className={`selection-card ${formData.dietPreference === diet.id ? 'active' : ''}`}
+              role="button" tabIndex={0} aria-pressed={!!(formData.dietPreference === diet.id)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); (() => updateFormData('dietPreference', diet.id))(); } }}
               onClick={() => updateFormData('dietPreference', diet.id)}>
               <span>{diet.label}</span>
             </div>
@@ -95,6 +101,8 @@ const StepProblems = ({ formData, updateFormData, prevStep, nextStep }) => {
           {dietControlLevels.map(level => (
             <div key={level.id}
               className={`selection-card ${formData.dietControl === level.id ? 'active' : ''}`}
+              role="button" tabIndex={0} aria-pressed={!!(formData.dietControl === level.id)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); (() => updateFormData('dietControl', level.id))(); } }}
               onClick={() => updateFormData('dietControl', level.id)}>
               <span>{level.label}</span>
             </div>
@@ -108,6 +116,8 @@ const StepProblems = ({ formData, updateFormData, prevStep, nextStep }) => {
           {sleepOptions.map(s => (
             <div key={s.id}
               className={`selection-card ${formData.sleepHours === s.id ? 'active' : ''}`}
+              role="button" tabIndex={0} aria-pressed={!!(formData.sleepHours === s.id)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); (() => updateFormData('sleepHours', s.id))(); } }}
               onClick={() => updateFormData('sleepHours', s.id)}>
               <span>{s.label}</span>
             </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Icon from '../Layout/Icon';
 import { auth } from '../../firebase';
 import { signOut } from 'firebase/auth';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
@@ -24,7 +25,7 @@ const ProfilePage = ({ formData, user, resetWizard }) => {
   return (
     <div className="animate-fade-in">
       <div className="section-card" style={{ borderTop: '4px solid var(--accent-purple)' }}>
-        <div className="section-header"><h3 style={{ color: 'var(--accent-purple)' }}>👤 Profile</h3></div>
+        <div className="section-header"><h3 style={{ color: 'var(--accent-purple)' }}><Icon name="user" /> Profile</h3></div>
         
         <div style={{ padding: '32px 24px' }}>
           {/* User Info */}
@@ -83,7 +84,7 @@ const ProfilePage = ({ formData, user, resetWizard }) => {
             <button className="btn-primary" style={{ width: '100%' }} onClick={resetWizard}>
               ↻ Recalibrate — Regenerate My Plan
             </button>
-            <button className="btn-secondary" style={{ width: '100%', color: '#ff6b6b', borderColor: 'rgba(255,107,107,0.3)' }} onClick={handleSignOut}>
+            <button className="btn-secondary" style={{ width: '100%', color: 'var(--terracotta)', borderColor: 'rgba(255,107,107,0.3)' }} onClick={handleSignOut}>
               Sign Out
             </button>
           </div>

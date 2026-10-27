@@ -70,6 +70,8 @@ const StepBody = ({ formData, updateFormData, nextStep }) => {
           {goals.map(goal => (
             <div key={goal.id}
               className={`selection-card ${formData.goal === goal.id ? 'active' : ''}`}
+              role="button" tabIndex={0} aria-pressed={!!(formData.goal === goal.id)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); (() => updateFormData('goal', goal.id))(); } }}
               onClick={() => updateFormData('goal', goal.id)}>
               <span>{goal.label}</span>
             </div>
@@ -93,6 +95,8 @@ const StepBody = ({ formData, updateFormData, nextStep }) => {
           {levels.map(level => (
             <div key={level.id}
               className={`selection-card ${formData.fitnessLevel === level.id ? 'active' : ''}`}
+              role="button" tabIndex={0} aria-pressed={!!(formData.fitnessLevel === level.id)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); (() => updateFormData('fitnessLevel', level.id))(); } }}
               onClick={() => updateFormData('fitnessLevel', level.id)}>
               <span>{level.label}</span>
             </div>

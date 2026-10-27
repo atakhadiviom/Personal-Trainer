@@ -1,4 +1,5 @@
 import React, { memo } from 'react';
+import Icon from '../Layout/Icon';
 import { getSafeYoutubeUrl } from '../../utils/url';
 
 const ExerciseRow = memo(({
@@ -33,14 +34,14 @@ const ExerciseRow = memo(({
           onClick={() => handleSwap(dayIdx, exIdx, ex.name)}
           disabled={isSwapping}
           style={{ background: 'none', border: 'none', color: isSwapping ? 'var(--accent-cyan)' : 'var(--text-dim)', fontSize: '0.7rem', cursor: isSwapping ? 'wait' : 'pointer', display: 'block', marginTop: '4px', textDecoration: 'underline' }}>
-           {isSwapping ? '⏳ Swapping...' : '🔄 Swap'}
+           {isSwapping ? <><Icon name="loader" className="spin" /> Swapping...</> : <><Icon name="swap" /> Swap</>}
         </button>
       </td>
       <td className="ex-sets">{ex.sets} × {ex.reps}</td>
       <td className="ex-rest">{ex.rest}</td>
       <td className="ex-weight">{ex.weight}</td>
       <td>
-        <a href={getSafeYoutubeUrl(ex.name)} target="_blank" rel="noreferrer" className="btn-yt">▶ Watch</a>
+        <a href={getSafeYoutubeUrl(ex.name)} target="_blank" rel="noreferrer" className="btn-yt"><Icon name="play" /> Watch</a>
       </td>
     </tr>
   );

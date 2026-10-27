@@ -41,6 +41,8 @@ const StepGym = ({ formData, updateFormData, prevStep, nextStep }) => {
           {environments.map(env => (
             <div key={env.id}
               className={`selection-card ${formData.trainingEnv === env.id ? 'active' : ''}`}
+              role="button" tabIndex={0} aria-pressed={!!(formData.trainingEnv === env.id)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); (() => updateFormData('trainingEnv', env.id))(); } }}
               onClick={() => updateFormData('trainingEnv', env.id)}>
               <span>{env.label}</span>
             </div>
@@ -67,6 +69,8 @@ const StepGym = ({ formData, updateFormData, prevStep, nextStep }) => {
           {daysPerWeek.map(d => (
             <div key={d.id}
               className={`selection-card ${formData.daysPerWeek === d.id ? 'active' : ''}`}
+              role="button" tabIndex={0} aria-pressed={!!(formData.daysPerWeek === d.id)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); (() => updateFormData('daysPerWeek', d.id))(); } }}
               onClick={() => updateFormData('daysPerWeek', d.id)}>
               <span>{d.label}</span>
             </div>
@@ -80,6 +84,8 @@ const StepGym = ({ formData, updateFormData, prevStep, nextStep }) => {
           {sessionLengths.map(s => (
             <div key={s.id}
               className={`selection-card ${formData.sessionLength === s.id ? 'active' : ''}`}
+              role="button" tabIndex={0} aria-pressed={!!(formData.sessionLength === s.id)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); (() => updateFormData('sessionLength', s.id))(); } }}
               onClick={() => updateFormData('sessionLength', s.id)}>
               <span>{s.label}</span>
             </div>

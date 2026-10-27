@@ -42,7 +42,7 @@ describe('ExerciseRow Component', () => {
     expect(checkbox).not.toBeChecked();
 
     // Watch button is present with correct link
-    const watchLink = screen.getByRole('link', { name: /▶ Watch/i });
+    const watchLink = screen.getByRole('link', { name: /Watch/i });
     expect(watchLink).toHaveAttribute('href', 'https://www.youtube.com/results?search_query=how+to+Bench+Press');
   });
 
@@ -75,7 +75,7 @@ describe('ExerciseRow Component', () => {
       </table>
     );
 
-    const swapButton = screen.getByRole('button', { name: /🔄 Swap/i });
+    const swapButton = screen.getByRole('button', { name: /Swap/i });
     fireEvent.click(swapButton);
 
     expect(handleSwap).toHaveBeenCalledTimes(1);
@@ -93,7 +93,7 @@ describe('ExerciseRow Component', () => {
       </table>
     );
 
-    const swapButton = screen.getByRole('button', { name: /⏳ Swapping.../i });
+    const swapButton = screen.getByRole('button', { name: /Swapping.../i });
     expect(swapButton).toBeInTheDocument();
     expect(swapButton).toBeDisabled();
   });

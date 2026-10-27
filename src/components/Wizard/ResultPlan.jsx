@@ -1,4 +1,5 @@
 import React from 'react';
+import Icon from '../Layout/Icon';
 import { getSafeYoutubeUrl } from '../../utils/url';
 
 const ResultPlan = ({ aiPlan, resetApp }) => {
@@ -13,7 +14,7 @@ const ResultPlan = ({ aiPlan, resetApp }) => {
         <p className="subtitle-tech">{aiPlan.overview.subtitle}</p>
         {aiPlan.overview.specialNote && (
           <div className="alert-box alert-warning">
-            <span className="icon">⚠️</span> {aiPlan.overview.specialNote}
+            <Icon name="alert" /> {aiPlan.overview.specialNote}
           </div>
         )}
       </div>
@@ -21,7 +22,7 @@ const ResultPlan = ({ aiPlan, resetApp }) => {
       {/* 12-WEEK PROGRESSION TIMELINE */}
       <div className="section-card section-progression">
         <div className="section-header">
-            <h3>📈 12-Week Progression Strategy</h3>
+            <h3><Icon name="trending" /> 12-Week Progression Strategy</h3>
         </div>
         <div className="timeline">
             {aiPlan.progression.map((item, i) => (
@@ -39,7 +40,7 @@ const ResultPlan = ({ aiPlan, resetApp }) => {
       {/* NUTRITION & MEAL PLAN */}
       <div className="section-card section-nutrition">
         <div className="section-header">
-            <h3>🥗 Daily Nutrition & Meal Plan</h3>
+            <h3><Icon name="utensils" /> Daily Nutrition & Meal Plan</h3>
         </div>
         <div className="macro-grid">
             <div className="macro-stat">
@@ -82,7 +83,7 @@ const ResultPlan = ({ aiPlan, resetApp }) => {
       {/* WORKOUT SCHEDULE (4 DAYS) */}
       <div className="section-card section-workout">
         <div className="section-header">
-            <h3>🛹 Weekly Workout Schedule (4 Days)</h3>
+            <h3><Icon name="calendar" /> Weekly Workout Schedule (4 Days)</h3>
         </div>
         
         <div className="workout-days">
@@ -154,11 +155,11 @@ const ResultPlan = ({ aiPlan, resetApp }) => {
       {/* MINDSET & RULES */}
       <div className="section-card section-mindset">
         <div className="section-header">
-            <h3>🧠 Mindset & Lifestyle Rules</h3>
+            <h3><Icon name="brain" /> Mindset & Lifestyle Rules</h3>
         </div>
         <ul className="mindset-list">
             {aiPlan.mindset.map((rule, idx) => (
-                <li key={idx}>✓ {rule}</li>
+                <li key={idx}><Icon name="check" /> {rule}</li>
             ))}
         </ul>
       </div>

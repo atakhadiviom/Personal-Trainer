@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import Icon from '../Layout/Icon';
 import { createPortal } from 'react-dom';
 import { auth, db } from '../../firebase';
 import ExerciseRow from './ExerciseRow';
@@ -67,8 +68,8 @@ const MyPlan = ({ formData, aiPlan }) => {
           const baseline = parseInt(existingBaseline || rhr || '0');
           const hrElevated = rhr && baseline && rhr > baseline * 1.10;
           if (hrElevated && numHrs < 6) {
-            setReadinessColor('#ff6b6b');
-            setReadinessLabel('⚠️ High HR + Low Sleep — Rest Day Recommended');
+            setReadinessColor('var(--terracotta)');
+            setReadinessLabel('High HR + Low Sleep — Rest Day Recommended');
           } else if (numHrs >= 7) {
             setReadinessColor('var(--accent-green)');
             setReadinessLabel('Optimal Readiness');
@@ -76,7 +77,7 @@ const MyPlan = ({ formData, aiPlan }) => {
             setReadinessColor('var(--accent-orange)');
             setReadinessLabel('Moderate Readiness');
           } else {
-            setReadinessColor('#ff6b6b');
+            setReadinessColor('var(--terracotta)');
             setReadinessLabel('Low Readiness — Consider Active Recovery');
           }
         }
@@ -523,7 +524,7 @@ Return ONLY valid JSON in this shape:
   if (!localPlan) {
     return (
       <div style={{ textAlign: 'center', padding: '60px 0' }}>
-        <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🏋️</div>
+        <Icon name="dumbbell" className="ui-icon-lg" />
         <h3>No plan generated yet</h3>
         <p style={{ color: 'var(--text-secondary)' }}>Complete the wizard to generate your personalized 12-week plan.</p>
       </div>
@@ -540,7 +541,7 @@ Return ONLY valid JSON in this shape:
           onClick={() => setShowCheckin(true)}
           style={{ width: '100%', marginBottom: '16px', padding: '16px', borderRadius: 'var(--r-md)', border: '2px solid var(--accent-cyan)', background: 'rgba(0,229,255,0.1)', color: 'var(--accent-cyan)', cursor: 'pointer', fontWeight: 'bold', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
         >
-          🎉 Week {selectedWeek} Complete! → Submit Check-In to Unlock Week {selectedWeek + 1}
+          <Icon name="sparkles" /> Week {selectedWeek} Complete! Submit Check-In to Unlock Week {selectedWeek + 1}
         </button>
       )}
 
@@ -559,13 +560,13 @@ Return ONLY valid JSON in this shape:
       {(fitSteps != null || fitCalsBurned != null) && (
         <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
           {fitSteps != null && (
-            <div style={{ padding: '6px 12px', borderRadius: '20px', background: 'rgba(232,168,56,0.12)', border: '1px solid rgba(232,168,56,0.3)', fontSize: '0.82rem', color: '#e8a838', fontWeight: 600 }}>
-              👟 {fitSteps.toLocaleString()} steps
+            <div style={{ padding: '6px 12px', borderRadius: '20px', background: 'rgba(249,115,22,0.12)', border: '1px solid rgba(249,115,22,0.3)', fontSize: '0.82rem', color: 'var(--accent)', fontWeight: 600 }}>
+              <Icon name="footprints" /> {fitSteps.toLocaleString()} steps
             </div>
           )}
           {fitCalsBurned != null && (
-            <div style={{ padding: '6px 12px', borderRadius: '20px', background: 'rgba(212,101,74,0.12)', border: '1px solid rgba(212,101,74,0.3)', fontSize: '0.82rem', color: '#d4654a', fontWeight: 600 }}>
-              🔥 {fitCalsBurned.toLocaleString()} kcal burned
+            <div style={{ padding: '6px 12px', borderRadius: '20px', background: 'rgba(248,113,113,0.12)', border: '1px solid rgba(248,113,113,0.3)', fontSize: '0.82rem', color: 'var(--terracotta)', fontWeight: 600 }}>
+              <Icon name="flame" /> {fitCalsBurned.toLocaleString()} kcal burned
             </div>
           )}
         </div>
@@ -573,9 +574,9 @@ Return ONLY valid JSON in this shape:
 
       {/* Feature 7: Inactivity Nudge */}
       {!nudgeDismissed && fitSteps != null && stepAvg7Day != null && new Date().getHours() >= 18 && fitSteps < stepAvg7Day * 0.6 && (
-        <div style={{ marginBottom: '12px', padding: '12px 14px', borderRadius: 'var(--r-md)', background: 'rgba(232,168,56,0.08)', border: '1px solid rgba(232,168,56,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-          <span style={{ fontSize: '0.85rem', color: '#e8a838' }}>🚶 You're behind today — a 10-min walk would close the gap!</span>
-          <button onClick={() => { setNudgeDismissed(true); sessionStorage.setItem('gfit_nudge_dismissed', '1'); }} style={{ background: 'none', border: 'none', color: 'var(--text-dim)', fontSize: '1.2rem', cursor: 'pointer', lineHeight: 1, padding: 0 }}>×</button>
+        <div style={{ marginBottom: '12px', padding: '12px 14px', borderRadius: 'var(--r-md)', background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+          <span style={{ fontSize: '0.85rem', color: 'var(--accent)' }}><Icon name="footprints" /> You're behind today — a 10-min walk would close the gap!</span>
+          <button onClick={() => { setNudgeDismissed(true); sessionStorage.setItem('gfit_nudge_dismissed', '1'); }} aria-label="Dismiss" style={{ background: 'none', border: 'none', color: 'var(--text-dim)', fontSize: '1.4rem', cursor: 'pointer', lineHeight: 1, minWidth: '44px', minHeight: '44px' }}>×</button>
         </div>
       )}
 
@@ -596,13 +597,13 @@ Return ONLY valid JSON in this shape:
                 disabled={locked}
                 title={locked ? `Complete Week ${w - 1} first` : ''}
               >
-                {done ? '✓' : locked ? '🔒' : `W${w}`}
+                {done ? <Icon name="check" label={`Week ${w} complete`} /> : locked ? <Icon name="lock" label={`Week ${w} locked`} /> : `W${w}`}
               </button>
             );
           })}
         </div>
         <button className="btn-secondary" style={{ padding: '6px 14px', fontSize: '0.8rem', whiteSpace: 'nowrap', marginLeft: '12px' }} onClick={handleShare}>
-          📤 Share
+          <Icon name="share" /> Share
         </button>
       </div>
 
@@ -652,7 +653,7 @@ Return ONLY valid JSON in this shape:
                 <table className="data-table exercise-table">
                   <thead>
                     <tr>
-                      <th style={{ width: '40px' }}>✓</th>
+                      <th style={{ width: '40px' }}><Icon name="check" label="Done" /></th>
                       <th>Exercise</th>
                       <th>Sets × Reps</th>
                       <th>Rest</th>
@@ -702,11 +703,11 @@ Return ONLY valid JSON in this shape:
       {/* Week Complete Check-in Modal — rendered via Portal to escape parent overflow/transform */}
       {showCheckin && createPortal(
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
-          <div className="section-card" style={{ width: '100%', maxWidth: '480px', borderRadius: 'var(--r-lg)', padding: '32px 24px', maxHeight: '85vh', overflowY: 'auto', position: 'relative' }}>
-            <button onClick={() => setShowCheckin(false)} style={{ position: 'absolute', top: '16px', right: '20px', background: 'none', border: 'none', color: 'var(--text-dim)', fontSize: '1.8rem', cursor: 'pointer', lineHeight: 1 }}>×</button>
+          <div className="section-card" role="dialog" aria-modal="true" aria-label={`Week ${selectedWeek} check-in`} onKeyDown={(e) => { if (e.key === 'Escape') setShowCheckin(false); }} style={{ width: '100%', maxWidth: '480px', borderRadius: 'var(--r-lg)', padding: '32px 24px', maxHeight: '85vh', overflowY: 'auto', position: 'relative' }}>
+            <button onClick={() => setShowCheckin(false)} aria-label="Close check-in" style={{ position: 'absolute', top: '8px', right: '12px', width: '44px', height: '44px', background: 'none', border: 'none', color: 'var(--text-dim)', fontSize: '1.8rem', cursor: 'pointer', lineHeight: 1 }}>×</button>
 
             <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>🎉</div>
+              <Icon name="sparkles" className="ui-icon-lg" />
               <h2 style={{ margin: 0 }}>Week {selectedWeek} Complete!</h2>
               <p style={{ color: 'var(--text-secondary)', marginTop: '8px' }}>Tell me how it went so I can personalize Week {selectedWeek + 1} for you.</p>
             </div>
@@ -720,12 +721,12 @@ Return ONLY valid JSON in this shape:
               <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>How did this week feel?</label>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
                 {[
-                  { id: 'too_easy', label: 'Too Easy', emoji: '😴' },
-                  { id: 'perfect', label: 'Perfect', emoji: '💪' },
-                  { id: 'too_hard', label: 'Too Hard', emoji: '🥵' }
+                  { id: 'too_easy', label: 'Too Easy', icon: 'moon' },
+                  { id: 'perfect', label: 'Perfect', icon: 'zap' },
+                  { id: 'too_hard', label: 'Too Hard', icon: 'flame' }
                 ].map(opt => (
                   <button key={opt.id} onClick={() => setCheckinData({ ...checkinData, weekRating: opt.id })} style={{ padding: '14px 8px', borderRadius: 'var(--r-md)', border: `2px solid ${checkinData.weekRating === opt.id ? 'var(--accent-cyan)' : 'var(--border)'}`, background: checkinData.weekRating === opt.id ? 'rgba(0,229,255,0.1)' : 'var(--bg-card)', cursor: 'pointer', textAlign: 'center', color: 'var(--text-primary)' }}>
-                    <div style={{ fontSize: '1.4rem' }}>{opt.emoji}</div>
+                    <Icon name={opt.icon} className="ui-icon-lg" />
                     <div style={{ fontSize: '0.72rem', marginTop: '4px', color: 'var(--text-secondary)' }}>{opt.label}</div>
                   </button>
                 ))}
@@ -752,7 +753,7 @@ Return ONLY valid JSON in this shape:
             </div>
 
             <button className="btn-primary" style={{ width: '100%', padding: '16px', fontSize: '1rem' }} onClick={generateNextWeek} disabled={isGenerating}>
-              {isGenerating ? `⏳ Generating Week ${selectedWeek + 1}...` : `Generate Week ${selectedWeek + 1} 🚀`}
+              {isGenerating ? <><Icon name="loader" className="spin" /> Generating Week {selectedWeek + 1}...</> : <>Generate Week {selectedWeek + 1} <Icon name="arrowRight" /></>}
             </button>
           </div>
         </div>

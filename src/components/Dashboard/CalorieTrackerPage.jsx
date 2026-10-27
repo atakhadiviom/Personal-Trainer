@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import Icon from '../Layout/Icon';
 import { auth, db } from '../../firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { getAIModel } from '../../utils/aiModel';
@@ -20,7 +21,7 @@ const CalorieTrackerPage = ({ formData }) => {
 
   // Memoize today's date so it doesn't change reference on every render (fixes midnight re-run bug)
   const today = useMemo(() => new Date().toISOString().split('T')[0], []);
-  const initialMessage = { role: 'ai', text: "Hey! 👋 Tell me what you ate and I'll calculate the calories and macros for you. Just type naturally — like \"2 eggs and toast with butter\" or \"large chicken shawarma wrap\"." };
+  const initialMessage = { role: 'ai', text: "Hey! Tell me what you ate and I'll calculate the calories and macros for you. Just type naturally — like \"2 eggs and toast with butter\" or \"large chicken shawarma wrap\"." };
   const [messages, setMessages] = useState([initialMessage]);
   const [entries, setEntries] = useState([]);
   const [input, setInput] = useState('');
@@ -154,11 +155,11 @@ Be accurate. Use standard serving sizes if the user doesn't specify amounts. All
       let responseText = '';
       if (parsed.items && parsed.items.length > 0) {
         parsed.items.forEach(item => {
-          responseText += `🍽 **${item.food}** (${item.portion})\n`;
+          responseText += `**${item.food}** (${item.portion})\n`;
           responseText += `   ${item.cals} kcal • ${item.pro}g protein • ${item.carbs}g carbs • ${item.fat}g fat\n\n`;
         });
-        responseText += `📊 **Total: ${parsed.totalCals} kcal** | P: ${parsed.totalPro}g | C: ${parsed.totalCarbs}g | F: ${parsed.totalFat}g\n\n`;
-        if (parsed.summary) responseText += `💡 ${parsed.summary}`;
+        responseText += `**Total: ${parsed.totalCals} kcal** | P: ${parsed.totalPro}g | C: ${parsed.totalCarbs}g | F: ${parsed.totalFat}g\n\n`;
+        if (parsed.summary) responseText += `Tip: ${parsed.summary}`;
       }
 
       setMessages(prev => [...prev, { role: 'ai', text: responseText }]);
@@ -191,7 +192,7 @@ Be accurate. Use standard serving sizes if the user doesn't specify amounts. All
     } catch (err) {
       console.error("AI calorie analysis failed:", err);
       setError("AI calorie analysis failed.");
-      setMessages(prev => [...prev, { role: 'ai', text: "⚠️ Couldn't analyze that right now. Try again in a moment — the AI might be rate-limited." }]);
+      setMessages(prev => [...prev, { role: 'ai', text: "Couldn't analyze that right now. Try again in a moment — the AI might be rate-limited." }]);
     } finally {
       setLoading(false);
     }
@@ -217,7 +218,7 @@ Be accurate. Use standard serving sizes if the user doesn't specify amounts. All
     <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 140px)' }}>
       {/* Macro Rings */}
       <div className="section-card" style={{ borderTop: '4px solid var(--accent-green)', flexShrink: 0 }}>
-        <div className="section-header"><h3 style={{ color: 'var(--accent-green)' }}>🔥 Today — {today}</h3></div>
+        <div className="section-header"><h3 style={{ color: 'var(--accent-green)' }}><Icon name="flame" /> Today — {today}</h3></div>
         <div className="macro-rings">
           <MacroRing label="Calories" current={totalCals} target={finalTargetCals} color="var(--accent-orange)" unit="kcal" />
           <MacroRing label="Protein" current={totalPro} target={targetPro} color="var(--accent-green)" unit="g" />
@@ -227,19 +228,19 @@ Be accurate. Use standard serving sizes if the user doesn't specify amounts. All
         {/* Feature 1: Step calorie sync */}
         {fitSteps != null && fitSteps > 0 && (
           <div style={{ padding: '8px 16px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>🚶 Steps bonus</span>
-            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#e8a838' }}>+{Math.round(fitSteps * 0.04)} kcal from {fitSteps.toLocaleString()} steps</span>
+            <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}><Icon name="footprints" /> Steps bonus</span>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--accent)' }}>+{Math.round(fitSteps * 0.04)} kcal from {fitSteps.toLocaleString()} steps</span>
           </div>
         )}
         {/* Feature 4: Smart hydration target */}
         <div style={{ padding: '8px 16px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>💧 Hydration goal</span>
+          <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}><Icon name="droplet" /> Hydration goal</span>
           <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--accent-blue)' }}>{(fitCalsBurned || 0) > 500 ? '3.0' : '2.5'}L today{(fitCalsBurned || 0) > 500 ? ' (+0.5L for activity)' : ''}</span>
         </div>
         {/* Feature 11: Plateau alert */}
         {plateauAlert && (
-          <div style={{ padding: '10px 16px', borderTop: '1px solid rgba(232,168,56,0.3)', background: 'rgba(232,168,56,0.06)', borderRadius: '0 0 var(--r-md) var(--r-md)' }}>
-            <span style={{ fontSize: '0.82rem', color: '#e8a838' }}>📊 Plateau Alert — You've been at target calories for 7 days. Consider a 200 kcal reduction or a refeed day.</span>
+          <div style={{ padding: '10px 16px', borderTop: '1px solid rgba(249,115,22,0.3)', background: 'rgba(249,115,22,0.06)', borderRadius: '0 0 var(--r-md) var(--r-md)' }}>
+            <span style={{ fontSize: '0.82rem', color: 'var(--accent)' }}><Icon name="chart" /> Plateau Alert — You've been at target calories for 7 days. Consider a 200 kcal reduction or a refeed day.</span>
           </div>
         )}
       </div>
@@ -278,7 +279,7 @@ Be accurate. Use standard serving sizes if the user doesn't specify amounts. All
                     style={{
                       background: 'none',
                       border: 'none',
-                      color: '#ff6b6b',
+                      color: 'var(--terracotta)',
                       cursor: 'pointer',
                       fontSize: '1rem',
                       padding: '0 2px',
@@ -286,7 +287,7 @@ Be accurate. Use standard serving sizes if the user doesn't specify amounts. All
                       flexShrink: 0
                     }}
                   >
-                    🗑️
+                    <Icon name="trash" />
                   </button>
                 </div>
               </div>
@@ -325,7 +326,7 @@ Be accurate. Use standard serving sizes if the user doesn't specify amounts. All
             color: 'var(--text-dim)',
             fontSize: '0.9rem'
           }}>
-            <span style={{ animation: 'pulse-glow 1.5s infinite' }}>🧠 Analyzing your food...</span>
+            <span style={{ animation: 'pulse-glow 1.5s infinite' }}><Icon name="brain" /> Analyzing your food...</span>
           </div>
         )}
         <div ref={chatEndRef} />
@@ -343,7 +344,7 @@ Be accurate. Use standard serving sizes if the user doesn't specify amounts. All
           style={{ flex: 1, fontSize: '0.95rem' }}
         />
         <button type="submit" className="btn-primary" disabled={loading || !input.trim()} style={{ padding: '12px 20px', whiteSpace: 'nowrap' }}>
-          {loading ? '...' : '📤 Send'}
+          {loading ? '...' : <><Icon name="send" /> Send</>}
         </button>
       </form>
     </div>

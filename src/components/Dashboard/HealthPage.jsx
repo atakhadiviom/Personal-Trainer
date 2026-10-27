@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Icon from '../Layout/Icon';
 import * as googleFit from '../../utils/googleFitService';
 
 const MetricCard = ({ label, value, unit, color }) => (
@@ -64,16 +65,16 @@ const HealthPage = () => {
     return (
       <div className="animate-fade-in">
         <div className="section-card" style={{ textAlign: 'center', padding: '40px 24px' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '16px' }}>❤️</div>
+          <Icon name="heart" className="ui-icon-lg" />
           <h3 style={{ marginBottom: '12px' }}>Connect Google Fit</h3>
           <p style={{ color: 'var(--text-secondary)', marginBottom: '8px', lineHeight: '1.6' }}>
             Sync your steps, calories, heart rate, and sleep automatically.
           </p>
           <p style={{ color: 'var(--text-dim)', fontSize: '0.82rem', marginBottom: '28px', lineHeight: '1.5' }}>
-            💡 Make sure "Health Connect" sync is enabled in your Google Fit app so your CMF Watch 2 data flows through.
+            <Icon name="lightbulb" /> Make sure "Health Connect" sync is enabled in your Google Fit app so your CMF Watch 2 data flows through.
           </p>
           {error && (
-            <p style={{ color: '#ff6b6b', fontSize: '0.85rem', marginBottom: '16px' }}>{error}</p>
+            <p style={{ color: 'var(--terracotta)', fontSize: '0.85rem', marginBottom: '16px' }}>{error}</p>
           )}
           <button className="btn-primary" onClick={handleConnect} style={{ width: '100%' }}>
             Connect Google Fit
@@ -97,7 +98,7 @@ const HealthPage = () => {
       </div>
 
       {error && (
-        <div style={{ padding: '12px 16px', marginBottom: '16px', border: '1px solid rgba(255,107,107,0.4)', color: '#ff6b6b', borderRadius: 'var(--r-md)', background: 'rgba(255,107,107,0.08)', fontSize: '0.9rem' }}>
+        <div style={{ padding: '12px 16px', marginBottom: '16px', border: '1px solid rgba(255,107,107,0.4)', color: 'var(--terracotta)', borderRadius: 'var(--r-md)', background: 'rgba(255,107,107,0.08)', fontSize: '0.9rem' }}>
           {error}&nbsp;
           <button onClick={fetchData} style={{ background: 'none', border: 'none', color: 'inherit', textDecoration: 'underline', cursor: 'pointer' }}>
             Retry
@@ -114,7 +115,7 @@ const HealthPage = () => {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
             <MetricCard label="Steps" value={metrics.steps} unit="today" color="var(--accent-orange)" />
             <MetricCard label="Calories" value={metrics.calories} unit="kcal burned" color="var(--accent-purple)" />
-            <MetricCard label="Heart Rate" value={metrics.heartRate != null ? `${metrics.heartRate} BPM` : null} unit="avg today" color="#ff6b6b" />
+            <MetricCard label="Heart Rate" value={metrics.heartRate != null ? `${metrics.heartRate} BPM` : null} unit="avg today" color="var(--terracotta)" />
             <MetricCard label="Sleep" value={metrics.sleep != null ? `${metrics.sleep} hrs` : null} unit="last night" color="var(--accent-blue)" />
           </div>
 
@@ -130,13 +131,13 @@ const HealthPage = () => {
           {sleepHistory.length > 0 && (() => {
             const avg = sleepHistory.reduce((s, d) => s + d.hours, 0) / sleepHistory.length;
             const insight = avg >= 7 ? 'Great recovery week — push hard' : avg >= 5.5 ? 'Moderate recovery — stay consistent' : 'Poor sleep trend — reduce intensity';
-            const insightColor = avg >= 7 ? 'var(--accent-green)' : avg >= 5.5 ? '#e8a838' : '#ff6b6b';
+            const insightColor = avg >= 7 ? 'var(--accent-green)' : avg >= 5.5 ? 'var(--accent)' : 'var(--terracotta)';
             return (
               <div className="section-card" style={{ marginTop: '14px' }}>
                 <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px', fontFamily: "'JetBrains Mono', ui-monospace, monospace" }}>Recovery Trend</div>
                 <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', height: '60px', marginBottom: '8px' }}>
                   {sleepHistory.map((d, i) => {
-                    const barColor = d.hours >= 7 ? 'var(--accent-green)' : d.hours >= 5.5 ? '#e8a838' : '#ff6b6b';
+                    const barColor = d.hours >= 7 ? 'var(--accent-green)' : d.hours >= 5.5 ? 'var(--accent)' : 'var(--terracotta)';
                     const heightPct = Math.min(Math.round((d.hours / 10) * 100), 100);
                     return (
                       <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', height: '100%', justifyContent: 'flex-end' }}>

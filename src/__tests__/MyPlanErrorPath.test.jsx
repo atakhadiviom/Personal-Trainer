@@ -68,7 +68,7 @@ describe('MyPlan Error Paths', () => {
     render(<MyPlan aiPlan={mockPlan} formData={{}} />);
 
     // Wait for render
-    const swapButton = await screen.findByText('🔄 Swap');
+    const swapButton = await screen.findByText('Swap');
 
     // Click swap
     await act(async () => {
@@ -81,7 +81,7 @@ describe('MyPlan Error Paths', () => {
     });
 
     // Button should revert
-    expect(swapButton).toHaveTextContent('🔄 Swap');
+    expect(swapButton).toHaveTextContent('Swap');
     expect(swapButton).not.toBeDisabled();
 
     // Check if error was logged

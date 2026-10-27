@@ -1,4 +1,5 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
+import Icon from './components/Layout/Icon';
 import './index.css';
 
 import { auth, db, firebaseMissingEnvKeys, firebaseSetupError } from './firebase';
@@ -126,12 +127,12 @@ function App() {
     if (step === 0 && aiError) {
       return (
         <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '16px' }}>⚠️</div>
-          <h2 className="step-title" style={{ color: '#ff6b6b' }}>AI Generation Failed</h2>
+          <Icon name="alert" className="ui-icon-lg" />
+          <h2 className="step-title" style={{ color: 'var(--terracotta)' }}>AI Generation Failed</h2>
           <p className="step-subtitle" style={{ marginBottom: '8px' }}>{aiError}</p>
           <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem', marginBottom: '24px' }}>The AI service could not be reached or returned an unusable answer. Retry in a moment; if it keeps failing, the service may be misconfigured.</p>
           <div className="btn-group" style={{ justifyContent: 'center', gap: '12px' }}>
-            <button className="btn-primary" onClick={generatePlan}>🔄 Retry Generation</button>
+            <button className="btn-primary" onClick={generatePlan}><Icon name="rotate" /> Retry Generation</button>
             <button className="btn-secondary" onClick={() => { setStep(3); setAiError(null); }}>← Back to Wizard</button>
           </div>
         </div>

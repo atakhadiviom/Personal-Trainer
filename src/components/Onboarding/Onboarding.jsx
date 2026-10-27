@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Icon from '../Layout/Icon';
 
 const slides = [
   {
@@ -117,7 +118,7 @@ const Onboarding = ({ onFinish }) => {
           onClick={goNext}
           style={{ width: '100%', padding: '16px', fontSize: '1rem' }}
         >
-          {isLast ? 'Get Started 🚀' : 'Next →'}
+          {isLast ? <>Get Started <Icon name="arrowRight" /></> : <>Next <Icon name="arrowRight" /></>}
         </button>
 
         {/* Slide counter */}

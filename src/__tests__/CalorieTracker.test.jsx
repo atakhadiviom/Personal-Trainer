@@ -10,7 +10,7 @@ describe('CalorieTracker Component', () => {
 
     // Default weight is 75
     // dailyCals = 75 * 30 = 2250
-    expect(screen.getByText('🔥 2250 kcal')).toBeInTheDocument();
+    expect(screen.getByText('2250 kcal')).toBeInTheDocument();
 
     // P: 75 * 2 = 150g
     // C: (2250 * 0.4) / 4 = 225g
@@ -25,7 +25,7 @@ describe('CalorieTracker Component', () => {
     render(<CalorieTracker formData={formData} />);
 
     // dailyCals = 80 * 22 = 1760
-    expect(screen.getByText('🔥 1760 kcal')).toBeInTheDocument();
+    expect(screen.getByText('1760 kcal')).toBeInTheDocument();
 
     // P: 80 * 2 = 160g
     // C: (1760 * 0.4) / 4 = 176g
@@ -40,7 +40,7 @@ describe('CalorieTracker Component', () => {
     render(<CalorieTracker formData={formData} />);
 
     // dailyCals = 80 * 30 = 2400
-    expect(screen.getByText('🔥 2400 kcal')).toBeInTheDocument();
+    expect(screen.getByText('2400 kcal')).toBeInTheDocument();
 
     // P: 80 * 2 = 160g
     // C: (2400 * 0.4) / 4 = 240g

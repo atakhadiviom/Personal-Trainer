@@ -114,8 +114,8 @@ describe('ResultPlan', () => {
   it('renders mindset rules correctly', () => {
     render(<ResultPlan aiPlan={mockAiPlan} />);
 
-    expect(screen.getByText('✓ Rule 1')).toBeInTheDocument();
-    expect(screen.getByText('✓ Rule 2')).toBeInTheDocument();
+    expect(screen.getByText('Rule 1')).toBeInTheDocument();
+    expect(screen.getByText('Rule 2')).toBeInTheDocument();
   });
 
   it('triggers resetApp when Recalibrate Profile button is clicked', () => {
