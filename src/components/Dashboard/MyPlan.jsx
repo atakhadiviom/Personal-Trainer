@@ -3,6 +3,7 @@ import Icon from '../Layout/Icon';
 import { createPortal } from 'react-dom';
 import { auth, db } from '../../firebase';
 import ExerciseRow from './ExerciseRow';
+import Toast from '../Layout/Toast';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { getAIModel } from '../../utils/aiModel';
 import * as googleFit from '../../utils/googleFitService';
@@ -15,6 +16,7 @@ const MyPlan = ({ formData, aiPlan }) => {
   const [swapping, setSwapping] = useState(null);
   const [localPlan, setLocalPlan] = useState(null);
   const [error, setError] = useState('');
+  const [toast, setToast] = useState(null);
   const [showCheckin, setShowCheckin] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [sleepData, setSleepData] = useState(null);
@@ -167,7 +169,7 @@ const MyPlan = ({ formData, aiPlan }) => {
       }
     };
     load();
-  }, []);
+  }, [aiPlan]);
 
   const getScheduleForWeek = (week) => {
     if (!localPlan) return null;
@@ -222,8 +224,12 @@ const MyPlan = ({ formData, aiPlan }) => {
       try { await navigator.share({ title: 'NovaFit AI', text, url: window.location.href }); }
       catch { displayError('Could not share plan.'); }
     } else {
-      navigator.clipboard.writeText(text);
-      alert('Status copied to clipboard!');
+      try {
+        await navigator.clipboard.writeText(text);
+        setToast({ message: 'Status copied to clipboard! 🔥', type: 'success' });
+      } catch {
+        displayError('Could not copy to clipboard.');
+      }
     }
   };
 
@@ -533,6 +539,11 @@ Return ONLY valid JSON in this shape:
 
   return (
     <div className="animate-fade-in">
+      {toast && (
+        <div className="toast-container">
+          <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
+        </div>
+      )}
       {error && <div className="alert-box alert-warning" style={{ marginBottom: '16px' }}>{error}</div>}
 
       {/* Week Complete Banner */}

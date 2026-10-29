@@ -5,6 +5,11 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { getAIModel } from '../../utils/aiModel';
 import * as googleFit from '../../utils/googleFitService';
 
+const INITIAL_MESSAGE = Object.freeze({
+  role: 'ai',
+  text: `Hey! Tell me what you ate and I'll calculate the calories and macros for you. Just type naturally — like "2 eggs and toast with butter" or "large chicken shawarma wrap".`
+});
+
 const CalorieTrackerPage = ({ formData }) => {
   const weight = parseInt(formData.weight) || 75;
   const isFatLoss = formData.goal === 'fatloss';
@@ -21,8 +26,7 @@ const CalorieTrackerPage = ({ formData }) => {
 
   // Memoize today's date so it doesn't change reference on every render (fixes midnight re-run bug)
   const today = useMemo(() => new Date().toISOString().split('T')[0], []);
-  const initialMessage = { role: 'ai', text: "Hey! Tell me what you ate and I'll calculate the calories and macros for you. Just type naturally — like \"2 eggs and toast with butter\" or \"large chicken shawarma wrap\"." };
-  const [messages, setMessages] = useState([initialMessage]);
+  const [messages, setMessages] = useState([INITIAL_MESSAGE]);
   const [entries, setEntries] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -39,7 +43,7 @@ const CalorieTrackerPage = ({ formData }) => {
           const data = snap.data();
           if (data.entries) setEntries(data.entries);
           // Replace messages (not append) to avoid duplicating history on re-mount
-          if (data.chatHistory?.length) setMessages([initialMessage, ...data.chatHistory]);
+          if (data.chatHistory?.length) setMessages([INITIAL_MESSAGE, ...data.chatHistory]);
         }
       } catch (e) {
         console.warn("Could not load calorie log:", e);
@@ -178,7 +182,7 @@ Be accurate. Use standard serving sizes if the user doesn't specify amounts. All
       if (user) {
         try {
           // Save full running chat history (not just last exchange) so it survives re-mounts
-          const fullHistory = [...messages.filter(m => m.role !== 'ai' || m !== initialMessage),
+          const fullHistory = [...messages.filter(m => m.role !== 'ai' || m !== INITIAL_MESSAGE),
             { role: 'user', text: userMsg }, { role: 'ai', text: responseText }];
           await setDoc(doc(db, 'users', user.uid, 'calorieLog', today), {
             entries: updatedEntries,
