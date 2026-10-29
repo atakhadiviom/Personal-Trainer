@@ -10,7 +10,8 @@ const ExerciseRow = memo(({
   isDone,
   isSwapping,
   toggleExercise,
-  handleSwap
+  handleSwap,
+  onStartTimer
 }) => {
   return (
     // memo() above prevents re-render unless isDone, isSwapping, or ex props change
@@ -38,7 +39,22 @@ const ExerciseRow = memo(({
         </button>
       </td>
       <td className="ex-sets">{ex.sets} × {ex.reps}</td>
-      <td className="ex-rest">{ex.rest}</td>
+      <td className="ex-rest">
+        {onStartTimer ? (
+          <button
+            type="button"
+            className="btn-rest-chip"
+            onClick={() => onStartTimer(ex.rest, ex.name)}
+            title={`Start ${ex.rest} rest timer`}
+            aria-label={`Start ${ex.rest} rest timer for ${ex.name}`}
+          >
+            <Icon name="timer" className="timer-icon" />
+            <span>{ex.rest}</span>
+          </button>
+        ) : (
+          ex.rest
+        )}
+      </td>
       <td className="ex-weight">{ex.weight}</td>
       <td>
         <a href={getSafeYoutubeUrl(ex.name)} target="_blank" rel="noreferrer" className="btn-yt"><Icon name="play" /> Watch</a>

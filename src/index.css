@@ -736,3 +736,209 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); box-sh
     opacity: 1;
   }
 }
+
+/* ─── REST TIMER & CHIPS ─── */
+.btn-rest-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(249, 115, 22, 0.12);
+  border: 1px solid rgba(249, 115, 22, 0.3);
+  color: var(--primary);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-variant-numeric: tabular-nums;
+}
+.btn-rest-chip:hover {
+  background: rgba(249, 115, 22, 0.22);
+  border-color: var(--primary);
+  transform: translateY(-1px);
+}
+.btn-rest-chip .timer-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.rest-timer-dock {
+  position: fixed;
+  bottom: 76px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 24px);
+  max-width: 500px;
+  z-index: 950;
+  background: rgba(27, 36, 52, 0.95);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(12px);
+  overflow: hidden;
+  animation: slideUpFade 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.rest-timer-dock.timer-completed {
+  border-color: var(--cta);
+  box-shadow: 0 0 25px rgba(34, 197, 94, 0.35);
+}
+
+.rest-timer-progress-bar {
+  height: 3px;
+  background: var(--primary);
+  transition: width 0.3s ease;
+}
+
+.rest-timer-dock.timer-completed .rest-timer-progress-bar {
+  background: var(--cta);
+}
+
+.rest-timer-inner {
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rest-timer-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rest-timer-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rest-timer-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--primary);
+}
+
+.rest-timer-dock.timer-completed .rest-timer-badge {
+  color: var(--cta);
+}
+
+.icon-timer-pulse {
+  width: 14px;
+  height: 14px;
+}
+
+.rest-timer-ex-name {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  max-width: 130px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rest-timer-digits {
+  font-family: var(--font-display);
+  font-size: 1.85rem;
+  font-weight: 700;
+  color: var(--text-cream);
+  line-height: 1;
+  letter-spacing: 0.03em;
+}
+
+.rest-timer-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-timer-chip {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 6px 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+.btn-timer-chip:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--text-cream);
+}
+.btn-timer-chip:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-timer-reset {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 7px;
+}
+.btn-timer-reset .ui-icon {
+  width: 13px;
+  height: 13px;
+}
+
+.btn-timer-action {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.btn-timer-action:hover {
+  transform: scale(1.05);
+}
+.btn-timer-action .ui-icon {
+  width: 16px;
+  height: 16px;
+}
+.btn-timer-action.btn-pause {
+  background: var(--primary);
+  color: #0f172a;
+}
+.btn-timer-action.btn-play {
+  background: var(--cta);
+  color: #0f172a;
+}
+
+.btn-timer-close {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px;
+  margin-left: 2px;
+}
+.btn-timer-close:hover {
+  color: var(--text-cream);
+}
+
+@keyframes slideUpFade {
+  from {
+    transform: translate(-50%, 12px);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}

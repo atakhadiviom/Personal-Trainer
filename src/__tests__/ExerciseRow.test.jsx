@@ -117,4 +117,30 @@ describe('ExerciseRow Component', () => {
     expect(row).toHaveClass('exercise-done');
     expect(row).toHaveStyle('opacity: 0.5');
   });
+
+  it('calls onStartTimer when rest timer button is clicked', () => {
+    const toggleExercise = vi.fn();
+    const handleSwap = vi.fn();
+    const onStartTimer = vi.fn();
+    render(
+      <table>
+        <tbody>
+          <ExerciseRow
+            {...defaultProps}
+            toggleExercise={toggleExercise}
+            handleSwap={handleSwap}
+            onStartTimer={onStartTimer}
+          />
+        </tbody>
+      </table>
+    );
+
+    const timerBtn = screen.getByRole('button', { name: /Start 60s rest timer for Bench Press/i });
+    expect(timerBtn).toBeInTheDocument();
+    fireEvent.click(timerBtn);
+
+    expect(onStartTimer).toHaveBeenCalledTimes(1);
+    expect(onStartTimer).toHaveBeenCalledWith('60s', 'Bench Press');
+  });
 });
+

@@ -3,6 +3,7 @@ import Icon from '../Layout/Icon';
 import { createPortal } from 'react-dom';
 import { auth, db } from '../../firebase';
 import ExerciseRow from './ExerciseRow';
+import RestTimer from './RestTimer';
 import Toast from '../Layout/Toast';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { getAIModel } from '../../utils/aiModel';
@@ -17,6 +18,7 @@ const MyPlan = ({ formData, aiPlan }) => {
   const [localPlan, setLocalPlan] = useState(null);
   const [error, setError] = useState('');
   const [toast, setToast] = useState(null);
+  const [activeTimer, setActiveTimer] = useState(null);
   const [showCheckin, setShowCheckin] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [sleepData, setSleepData] = useState(null);
@@ -99,6 +101,20 @@ const MyPlan = ({ formData, aiPlan }) => {
 
   useEffect(() => {
     const load = async () => {
+      // Instant offline hydration from cache
+      try {
+        const cachedComp = localStorage.getItem('novafit_cached_completed');
+        if (cachedComp && !isDirtyRef.current) {
+          const parsed = JSON.parse(cachedComp);
+          if (parsed && typeof parsed === 'object') setCompletedExercises(parsed);
+        }
+        const cachedPlans = localStorage.getItem('novafit_cached_weekly_plans');
+        if (cachedPlans) {
+          const parsed = JSON.parse(cachedPlans);
+          if (parsed && typeof parsed === 'object') setWeeklyPlans(parsed);
+        }
+      } catch { /* ignore localStorage unavailable */ }
+
       const user = auth.currentUser;
       if (!user) return;
       try {
@@ -112,6 +128,12 @@ const MyPlan = ({ formData, aiPlan }) => {
           if (!isDirtyRef.current && data.completedExercises) setCompletedExercises(loadedCompleted);
           if (data.weeklyPlans) setWeeklyPlans(loadedWeeklyPlans);
           if (data.formData?.weight) setCheckinData(prev => ({ ...prev, currentWeight: data.formData.weight }));
+
+          // Cache to localStorage for offline access
+          try {
+            localStorage.setItem('novafit_cached_completed', JSON.stringify(loadedCompleted));
+            localStorage.setItem('novafit_cached_weekly_plans', JSON.stringify(loadedWeeklyPlans));
+          } catch { /* ignore */ }
 
           // Auto-jump to the first incomplete week that has a schedule.
           // Use aiPlan prop directly — localPlan state is null at this point
@@ -193,6 +215,9 @@ const MyPlan = ({ formData, aiPlan }) => {
     setCompletedExercises(prev => {
       const updated = { ...prev, [key]: !prev[key] };
       isDirtyRef.current = true;
+      try {
+        localStorage.setItem('novafit_cached_completed', JSON.stringify(updated));
+      } catch { /* ignore */ }
       const schedule = getScheduleForWeek(selectedWeek);
       if (!prev[key] && isWeekComplete(selectedWeek, schedule, updated)) {
         const nextExists = getScheduleForWeek(selectedWeek + 1);
@@ -544,6 +569,19 @@ Return ONLY valid JSON in this shape:
           <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
         </div>
       )}
+      {activeTimer && (
+        <RestTimer
+          initialSeconds={activeTimer.rest}
+          exerciseName={activeTimer.name}
+          onClose={() => setActiveTimer(null)}
+          onFinish={() => {
+            setToast({
+              message: `Rest done for ${activeTimer.name || 'exercise'}! Ready for next set 🔥`,
+              type: 'success'
+            });
+          }}
+        />
+      )}
       {error && <div className="alert-box alert-warning" style={{ marginBottom: '16px' }}>{error}</div>}
 
       {/* Week Complete Banner */}
@@ -688,6 +726,7 @@ Return ONLY valid JSON in this shape:
                           isSwapping={swapping === `${dayIdx}_${exIdx}`}
                           toggleExercise={toggleExercise}
                           handleSwap={handleSwap}
+                          onStartTimer={(rest, name) => setActiveTimer({ rest, name })}
                         />
                       );
                     })}
