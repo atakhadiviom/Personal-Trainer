@@ -5,6 +5,14 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { getAIModel } from '../../utils/aiModel';
 import * as googleFit from '../../utils/googleFitService';
 
+const QUICK_MEALS = Object.freeze([
+  '🍳 2 eggs and toast',
+  '🥤 30g whey protein shake',
+  '🍗 200g chicken and rice',
+  '☕ Black coffee',
+  '🥗 Greek salad'
+]);
+
 const INITIAL_MESSAGE = Object.freeze({
   role: 'ai',
   text: `Hey! Tell me what you ate and I'll calculate the calories and macros for you. Just type naturally — like "2 eggs and toast with butter" or "large chicken shawarma wrap".`
@@ -31,7 +39,47 @@ const CalorieTrackerPage = ({ formData }) => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef(null);
   const chatEndRef = useRef(null);
+
+  const toggleListening = () => {
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRec) {
+      setError('Voice dictation is not supported on this browser.');
+      return;
+    }
+
+    if (isListening) {
+      try { recognitionRef.current?.stop(); } catch { /* ignore */ }
+      setIsListening(false);
+      return;
+    }
+
+    try {
+      const rec = new SpeechRec();
+      rec.continuous = false;
+      rec.interimResults = false;
+      rec.lang = 'en-US';
+
+      rec.onstart = () => setIsListening(true);
+      rec.onresult = (event) => {
+        const transcript = event.results?.[0]?.[0]?.transcript;
+        if (transcript) {
+          setInput(prev => (prev ? `${prev} ${transcript}` : transcript));
+        }
+      };
+      rec.onerror = () => {
+        setIsListening(false);
+      };
+      rec.onend = () => setIsListening(false);
+
+      recognitionRef.current = rec;
+      rec.start();
+    } catch {
+      setIsListening(false);
+    }
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -336,17 +384,42 @@ Be accurate. Use standard serving sizes if the user doesn't specify amounts. All
         <div ref={chatEndRef} />
       </div>
 
+      {/* Quick Meal Preset Chips */}
+      <div className="quick-meal-chips" role="group" aria-label="Quick meal templates">
+        {QUICK_MEALS.map((meal, idx) => (
+          <button
+            key={idx}
+            type="button"
+            className="btn-quick-chip"
+            onClick={() => setInput(meal.replace(/^[^\s]+\s/, ''))}
+            aria-label={`Insert ${meal}`}
+          >
+            {meal}
+          </button>
+        ))}
+      </div>
+
       {/* Input Bar */}
       <form onSubmit={handleSend} style={{
-        display: 'flex', gap: '8px', padding: '12px 0', borderTop: '1px solid var(--border)', flexShrink: 0
+        display: 'flex', gap: '8px', padding: '10px 0', borderTop: '1px solid var(--border)', flexShrink: 0
       }}>
         <input
           value={input}
           onChange={e => setInput(e.target.value)}
-          placeholder="I just had 2 eggs and toast with butter..."
+          placeholder={isListening ? "Listening... speak what you ate" : "I just had 2 eggs and toast with butter..."}
           disabled={loading}
           style={{ flex: 1, fontSize: '0.95rem' }}
         />
+        <button
+          type="button"
+          className={`btn-voice-input ${isListening ? 'listening' : ''}`}
+          onClick={toggleListening}
+          disabled={loading}
+          title={isListening ? "Stop listening" : "Dictate meal by voice"}
+          aria-label={isListening ? "Stop voice listening" : "Start voice listening"}
+        >
+          <Icon name="mic" />
+        </button>
         <button type="submit" className="btn-primary" disabled={loading || !input.trim()} style={{ padding: '12px 20px', whiteSpace: 'nowrap' }}>
           {loading ? '...' : <><Icon name="send" /> Send</>}
         </button>

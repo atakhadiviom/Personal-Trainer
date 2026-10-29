@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import { auth, db } from '../../firebase';
 import ExerciseRow from './ExerciseRow';
 import RestTimer from './RestTimer';
+import ShareModal from './ShareModal';
 import Toast from '../Layout/Toast';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { getAIModel } from '../../utils/aiModel';
@@ -19,6 +20,7 @@ const MyPlan = ({ formData, aiPlan }) => {
   const [error, setError] = useState('');
   const [toast, setToast] = useState(null);
   const [activeTimer, setActiveTimer] = useState(null);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [showCheckin, setShowCheckin] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [sleepData, setSleepData] = useState(null);
@@ -243,19 +245,8 @@ const MyPlan = ({ formData, aiPlan }) => {
     return () => clearTimeout(t);
   }, [completedExercises]);
 
-  const handleShare = async () => {
-    const text = `I just finished Week ${selectedWeek} of my AI Gym Transformation with NovaFit 🔥`;
-    if (navigator.share) {
-      try { await navigator.share({ title: 'NovaFit AI', text, url: window.location.href }); }
-      catch { displayError('Could not share plan.'); }
-    } else {
-      try {
-        await navigator.clipboard.writeText(text);
-        setToast({ message: 'Status copied to clipboard! 🔥', type: 'success' });
-      } catch {
-        displayError('Could not copy to clipboard.');
-      }
-    }
+  const handleShare = () => {
+    setShowShareModal(true);
   };
 
   const handleSwap = async (dayIdx, exIdx, exName) => {
@@ -582,6 +573,16 @@ Return ONLY valid JSON in this shape:
           }}
         />
       )}
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        week={selectedWeek}
+        totalWeeks={12}
+        completedCount={Object.values(completedExercises).filter(Boolean).length}
+        onCopySuccess={(msg) => {
+          setToast({ message: msg, type: 'success' });
+        }}
+      />
       {error && <div className="alert-box alert-warning" style={{ marginBottom: '16px' }}>{error}</div>}
 
       {/* Week Complete Banner */}

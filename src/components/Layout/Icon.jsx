@@ -23,6 +23,7 @@ const paths = {
   play: <path d="M7 4v16l13-8z" />,
   pause: <><rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" /></>,
   timer: <><circle cx="12" cy="12" r="9" /><polyline points="12 6 12 12 16 14" /></>,
+  mic: <><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" x2="12" y1="19" y2="22" /></>,
   user: <><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 4-6 8-6s8 2 8 6" /></>,
   dumbbell: <><path d="M6 6v12M18 6v12M3 9v6M21 9v6M6 12h12" /></>,
   arrowRight: <path d="M5 12h14M13 6l6 6-6 6" />,
