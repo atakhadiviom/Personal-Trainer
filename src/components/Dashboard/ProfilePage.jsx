@@ -1,15 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import Icon from '../Layout/Icon';
+import Toast from '../Layout/Toast';
+import ProModal from './ProModal';
 import { auth } from '../../firebase';
 import { signOut } from 'firebase/auth';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import * as googleFit from '../../utils/googleFitService';
+import { isProSubscriber, getSubscriptionDetails, onSubscriptionChange } from '../../utils/subscription';
 
 const ProfilePage = ({ formData, user, resetWizard }) => {
   const currentUser = user || auth.currentUser;
 
   const handleSignOut = () => signOut(auth);
   const [dynamicTDEE, setDynamicTDEE] = useState(null);
+  const [showProModal, setShowProModal] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [isPro, setIsPro] = useState(isProSubscriber());
+  const [subDetails, setSubDetails] = useState(getSubscriptionDetails());
+
   useEffect(() => {
     const fetchTDEE = async () => {
       if (googleFit.getToken()) {
@@ -22,10 +30,28 @@ const ProfilePage = ({ formData, user, resetWizard }) => {
     fetchTDEE();
   }, []);
 
+  useEffect(() => {
+    const unsub = onSubscriptionChange(() => {
+      setIsPro(isProSubscriber());
+      setSubDetails(getSubscriptionDetails());
+    });
+    return unsub;
+  }, []);
+
   return (
     <div className="animate-fade-in">
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type || 'success'}
+          onClose={() => setToast(null)}
+        />
+      )}
+
       <div className="section-card" style={{ borderTop: '4px solid var(--accent-purple)' }}>
-        <div className="section-header"><h3 style={{ color: 'var(--accent-purple)' }}><Icon name="user" /> Profile</h3></div>
+        <div className="section-header">
+          <h3 style={{ color: 'var(--accent-purple)' }}><Icon name="user" /> Profile</h3>
+        </div>
         
         <div style={{ padding: '32px 24px' }}>
           {/* User Info */}
@@ -40,6 +66,42 @@ const ProfilePage = ({ formData, user, resetWizard }) => {
             <div>
               <h3 style={{ marginBottom: '4px' }}>{currentUser?.displayName || 'NovaFit Athlete'}</h3>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>{currentUser?.email}</p>
+            </div>
+          </div>
+
+          {/* Membership Tier Card */}
+          <div style={{ marginTop: '32px' }}>
+            <h4 style={{ marginBottom: '16px', color: 'var(--text-secondary)' }}>Membership Tier</h4>
+            <div className={`membership-card ${isPro ? 'pro-active' : 'free-tier'}`} data-testid="membership-card">
+              <div className="membership-card-body">
+                <div className="membership-tier-header">
+                  <div className="membership-badge">
+                    {isPro ? (
+                      <span className="pro-gradient-tag"><Icon name="sparkles" /> NovaFit Pro Athlete 👑</span>
+                    ) : (
+                      <span className="free-tag">NovaFit Free Tier</span>
+                    )}
+                  </div>
+                  <span className="membership-status-chip">
+                    {isPro ? 'Active' : 'Standard'}
+                  </span>
+                </div>
+                <p className="membership-desc">
+                  {isPro
+                    ? `Unlimited AI workout swaps, real-time sleep/HRV readiness, and custom macro targets active (${subDetails.cycle}).`
+                    : 'Basic 12-week AI training schedule with standard nutrition tracking. Upgrade to unlock biometric readiness and unlimited plan adjustments.'}
+                </p>
+              </div>
+              <div className="membership-card-action">
+                <button
+                  type="button"
+                  className={isPro ? "btn-secondary" : "btn-primary"}
+                  onClick={() => setShowProModal(true)}
+                  data-testid="btn-membership-action"
+                >
+                  {isPro ? 'Manage Pro Subscription' : 'Upgrade to Pro ($9.99/mo)'}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -90,6 +152,12 @@ const ProfilePage = ({ formData, user, resetWizard }) => {
           </div>
         </div>
       </div>
+
+      <ProModal
+        isOpen={showProModal}
+        onClose={() => setShowProModal(false)}
+        onSuccess={(msg) => setToast({ message: msg, type: 'success' })}
+      />
     </div>
   );
 };

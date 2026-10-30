@@ -1235,3 +1235,373 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); box-sh
     box-shadow: 0 0 12px 3px rgba(239, 68, 68, 0.6);
   }
 }
+
+/* ==========================================================================
+   NovaFit Pro Tier & Subscription Upgrade Flow
+   ========================================================================== */
+
+/* Header Pro Trigger Badges */
+.header-upgrade-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.2), rgba(168, 85, 247, 0.25));
+  border: 1px solid rgba(168, 85, 247, 0.5);
+  color: #f3e8ff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.header-upgrade-btn:hover {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.35), rgba(168, 85, 247, 0.45));
+  border-color: #c084fc;
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.4);
+  transform: translateY(-1px);
+}
+.header-upgrade-btn svg {
+  width: 13px;
+  height: 13px;
+  color: #facc15;
+}
+
+.header-pro-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: linear-gradient(135deg, #9333ea 0%, #d97706 100%);
+  border: 1px solid rgba(250, 204, 21, 0.6);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 4px 10px;
+  border-radius: 20px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(147, 51, 234, 0.35);
+  transition: all 0.2s ease;
+}
+.header-pro-badge:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 14px rgba(250, 204, 21, 0.5);
+}
+
+/* Membership Card in ProfilePage */
+.membership-card {
+  border-radius: var(--r-md);
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: all 0.2s ease;
+}
+.membership-card.pro-active {
+  background: linear-gradient(135deg, rgba(147, 51, 234, 0.12), rgba(217, 119, 6, 0.08));
+  border-color: rgba(192, 132, 252, 0.4);
+}
+.membership-tier-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.membership-badge {
+  font-size: 1rem;
+  font-weight: 700;
+}
+.pro-gradient-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #facc15, #f43f5e);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.free-tag {
+  color: var(--text-cream);
+}
+.membership-status-chip {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 3px 8px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+}
+.membership-card.pro-active .membership-status-chip {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+  border: 1px solid rgba(74, 222, 128, 0.3);
+}
+.membership-desc {
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--text-dim);
+  margin: 0;
+}
+.membership-card-action button {
+  width: 100%;
+}
+
+/* Pro Modal Card */
+.pro-modal-card {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: rgba(22, 19, 28, 0.96);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(168, 85, 247, 0.2);
+  border-radius: 20px;
+  padding: 28px 24px;
+  animation: modalPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  color: var(--text-cream);
+}
+
+.pro-modal-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+.pro-pill-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: rgba(168, 85, 247, 0.15);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: 16px;
+  color: #c084fc;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin-bottom: 12px;
+}
+.pro-pill-badge svg {
+  width: 12px;
+  height: 12px;
+}
+.pro-modal-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  margin: 0 0 8px 0;
+  line-height: 1.2;
+}
+.pro-modal-subtitle {
+  font-size: 0.86rem;
+  color: var(--text-dim);
+  line-height: 1.45;
+  margin: 0 auto;
+  max-width: 420px;
+}
+
+/* Pro Active Card */
+.pro-active-card {
+  background: linear-gradient(135deg, rgba(147, 51, 234, 0.15), rgba(217, 119, 6, 0.1));
+  border: 1px solid rgba(250, 204, 21, 0.3);
+  border-radius: var(--r-md);
+  padding: 20px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+.pro-active-icon {
+  font-size: 2rem;
+  margin-bottom: 6px;
+}
+.pro-active-info h4 {
+  font-size: 1.1rem;
+  color: var(--text-cream);
+  margin-bottom: 4px;
+}
+.pro-active-info p {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+.pro-renewal-pill {
+  display: inline-block;
+  font-size: 0.75rem;
+  padding: 3px 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  color: #c084fc;
+  margin-bottom: 16px;
+}
+
+/* Billing Cycle Switcher */
+.pro-cycle-switcher {
+  display: flex;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 4px;
+  margin-bottom: 16px;
+  gap: 4px;
+}
+.cycle-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 9px 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.cycle-btn.active {
+  background: rgba(168, 85, 247, 0.25);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+.save-badge {
+  font-size: 0.68rem;
+  background: #22c55e;
+  color: #000;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 8px;
+}
+
+/* Price Box */
+.pro-price-box {
+  text-align: center;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: var(--r-md);
+  padding: 12px;
+  margin-bottom: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+.price-main {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-cream);
+}
+.price-sub {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+/* Features Matrix */
+.pro-features-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.pro-feature-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+.feat-icon-col {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.feat-icon-bubble {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(168, 85, 247, 0.15);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #c084fc;
+}
+.feat-icon-bubble svg {
+  width: 16px;
+  height: 16px;
+}
+.feat-text-col {
+  flex: 1;
+}
+.feat-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 3px;
+}
+.feat-title-row strong {
+  font-size: 0.88rem;
+  color: var(--text-cream);
+}
+.feat-chip {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: rgba(249, 115, 22, 0.2);
+  color: #fb923c;
+  border: 1px solid rgba(249, 115, 22, 0.3);
+  text-transform: uppercase;
+}
+.feat-desc {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* Footer & CTA */
+.pro-modal-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.pro-guarantee-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 0.74rem;
+  color: var(--text-dim);
+}
+.pro-guarantee-note svg {
+  width: 14px;
+  height: 14px;
+  color: #22c55e;
+}
+.btn-pro-upgrade {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #f97316 0%, #ec4899 50%, #8b5cf6 100%);
+  border: none;
+  border-radius: var(--r-md);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  padding: 14px 20px;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(236, 72, 153, 0.35);
+  transition: all 0.2s ease;
+}
+.btn-pro-upgrade:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 26px rgba(236, 72, 153, 0.5);
+  filter: brightness(1.08);
+}
+.btn-pro-upgrade:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}

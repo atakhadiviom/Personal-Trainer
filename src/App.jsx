@@ -1,5 +1,6 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import Icon from './components/Layout/Icon';
+import Toast from './components/Layout/Toast';
 import './index.css';
 
 import { auth, db, firebaseMissingEnvKeys, firebaseSetupError } from './firebase';
@@ -7,6 +8,7 @@ import { onAuthStateChanged, signOut, getRedirectResult } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 import { generateWorkoutPlan } from './utils/aiService';
+import { isProSubscriber, onSubscriptionChange } from './utils/subscription';
 
 import Login from './components/Auth/Login';
 import Onboarding from './components/Onboarding';
@@ -16,6 +18,7 @@ import StepGym from './components/Wizard/StepGym';
 import LoadingAI from './components/Wizard/LoadingAI';
 
 import Navbar from './components/Layout/Navbar';
+import ProModal from './components/Dashboard/ProModal';
 
 // Lazy-load heavy dashboard tabs — splits Firebase+Recharts into separate chunks
 const MyPlan = lazy(() => import('./components/Dashboard/MyPlan'));
@@ -33,6 +36,9 @@ function App() {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(!firebaseSetupError && !!auth && !!db);
   const [activeTab, setActiveTab] = useState('plan');
+  const [isPro, setIsPro] = useState(isProSubscriber());
+  const [showProModal, setShowProModal] = useState(false);
+  const [toast, setToast] = useState(null);
 
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
@@ -47,6 +53,14 @@ function App() {
   const [aiPlan, setAiPlan] = useState(null);
   const [aiError, setAiError] = useState(null);
   const [showOnboarding, setShowOnboarding] = useState(!localStorage.getItem('novafit_onboarded'));
+
+  // Subscription listener
+  useEffect(() => {
+    const unsub = onSubscriptionChange(() => {
+      setIsPro(isProSubscriber());
+    });
+    return unsub;
+  }, []);
 
   // Auth listener + load saved data
   useEffect(() => {
@@ -234,18 +248,47 @@ function App() {
   // --- DASHBOARD ---
   return (
     <div className="app-shell">
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type || 'success'}
+          onClose={() => setToast(null)}
+        />
+      )}
+
       <header className="dash-header">
         <a href="/" className="logo"><span className="gradient-text">NovaFit</span> AI</a>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button
+            type="button"
+            className={isPro ? "header-pro-badge" : "header-upgrade-btn"}
+            onClick={() => setShowProModal(true)}
+            aria-label={isPro ? "NovaFit Pro Status" : "Upgrade to NovaFit Pro"}
+            data-testid="header-pro-trigger"
+          >
+            {isPro ? (
+              <>👑 <span>PRO</span></>
+            ) : (
+              <><Icon name="sparkles" /> <span>Upgrade</span></>
+            )}
+          </button>
           <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{user.displayName || user.email}</span>
         </div>
       </header>
+
       <main className="dash-content">
         <Suspense fallback={<TabFallback />}>
           {renderDashboardTab()}
         </Suspense>
       </main>
+
       <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
+
+      <ProModal
+        isOpen={showProModal}
+        onClose={() => setShowProModal(false)}
+        onSuccess={(msg) => setToast({ message: msg, type: 'success' })}
+      />
     </div>
   );
 }
