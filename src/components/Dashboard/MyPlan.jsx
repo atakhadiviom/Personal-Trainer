@@ -5,6 +5,8 @@ import { auth, db } from '../../firebase';
 import ExerciseRow from './ExerciseRow';
 import RestTimer from './RestTimer';
 import ShareModal from './ShareModal';
+import CoachAudioSummary from './CoachAudioSummary';
+import { generateCoachScript } from '../../utils/coachVoice';
 import Toast from '../Layout/Toast';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { getAIModel } from '../../utils/aiModel';
@@ -22,6 +24,8 @@ const MyPlan = ({ formData, aiPlan }) => {
   const [activeTimer, setActiveTimer] = useState(null);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showCheckin, setShowCheckin] = useState(false);
+  const [showCoachAudio, setShowCoachAudio] = useState(false);
+  const [coachDebriefData, setCoachDebriefData] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [sleepData, setSleepData] = useState(null);
   const [readinessColor, setReadinessColor] = useState('gray');
@@ -282,6 +286,33 @@ Return ONLY this JSON (no markdown):
     }
   };
 
+  const handleOpenCoachDebrief = (targetWeek = selectedWeek) => {
+    const checkinWeek = targetWeek > 1 ? targetWeek - 1 : 1;
+    let debrief = null;
+    try {
+      const stored = localStorage.getItem(`novafit_debrief_w${checkinWeek}`);
+      if (stored) debrief = JSON.parse(stored);
+    } catch (_e) { void _e; }
+
+    if (!debrief) {
+      const script = generateCoachScript({
+        week: checkinWeek,
+        weekRating: 'perfect',
+        energyLevel: 4,
+        currentWeight: formData?.weight,
+        notes: `Focusing on Week ${targetWeek} progression`
+      });
+      debrief = {
+        week: checkinWeek,
+        nextWeek: targetWeek,
+        checkinData: { weekRating: 'perfect', energyLevel: 4, currentWeight: formData?.weight },
+        script
+      };
+    }
+    setCoachDebriefData(debrief);
+    setShowCoachAudio(true);
+  };
+
   const generateNextWeek = async () => {
     setIsGenerating(true);
     try {
@@ -529,6 +560,34 @@ Return ONLY valid JSON in this shape:
       setWeeklyPlans(updatedWeekly);
       setShowCheckin(false);
       setSelectedWeek(selectedWeek + 1);
+
+      // Generate & store AI Coach spoken debrief
+      const debriefScript = generateCoachScript({
+        week: selectedWeek,
+        weekRating: checkinData.weekRating,
+        energyLevel: checkinData.energyLevel,
+        currentWeight: checkinData.currentWeight || formData?.weight,
+        previousWeight: formData?.weight,
+        newPain: checkinData.newPain,
+        notes: checkinData.notes
+      });
+      const debriefPayload = {
+        week: selectedWeek,
+        nextWeek: selectedWeek + 1,
+        checkinData: { ...checkinData, previousWeight: formData?.weight },
+        script: debriefScript
+      };
+      try {
+        localStorage.setItem(`novafit_debrief_w${selectedWeek}`, JSON.stringify(debriefPayload));
+      } catch (_e) { void _e; }
+
+      setCoachDebriefData(debriefPayload);
+      setShowCoachAudio(true);
+      setToast({
+        message: `Week ${selectedWeek + 1} unlocked! Listen to Coach Leo's audio debrief 🎙️`,
+        type: 'success'
+      });
+
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (e) {
       console.error(e);
@@ -581,6 +640,19 @@ Return ONLY valid JSON in this shape:
         completedCount={Object.values(completedExercises).filter(Boolean).length}
         onCopySuccess={(msg) => {
           setToast({ message: msg, type: 'success' });
+        }}
+      />
+      <CoachAudioSummary
+        isOpen={showCoachAudio}
+        onClose={() => setShowCoachAudio(false)}
+        week={coachDebriefData?.week || (selectedWeek > 1 ? selectedWeek - 1 : selectedWeek)}
+        nextWeek={coachDebriefData?.nextWeek || selectedWeek}
+        checkinData={coachDebriefData?.checkinData}
+        customScript={coachDebriefData?.script}
+        autoPlay={true}
+        onProceed={() => {
+          setShowCoachAudio(false);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
       />
       {error && <div className="alert-box alert-warning" style={{ marginBottom: '16px' }}>{error}</div>}
@@ -654,6 +726,16 @@ Return ONLY valid JSON in this shape:
         </div>
         <button className="btn-secondary" style={{ padding: '6px 14px', fontSize: '0.8rem', whiteSpace: 'nowrap', marginLeft: '12px' }} onClick={handleShare}>
           <Icon name="share" /> Share
+        </button>
+        <button
+          type="button"
+          className="btn-secondary"
+          style={{ padding: '6px 14px', fontSize: '0.8rem', whiteSpace: 'nowrap', marginLeft: '8px' }}
+          onClick={() => handleOpenCoachDebrief(selectedWeek)}
+          title="Listen to AI Coach Audio Debrief"
+          data-testid="btn-coach-debrief"
+        >
+          <Icon name="mic" /> Debrief
         </button>
       </div>
 

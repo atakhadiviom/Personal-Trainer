@@ -26,7 +26,7 @@ NovaFit AI: 12-week gym trainer web app with DeepSeek AI workout/nutrition gener
 4. [x] **Viral Transformation Cards**: 1-click social share cards with WhatsApp and native share integration.
 5. [x] **Multi-Modal Meal Logging**: Browser-native voice dictation button (`🎙️`) + quick meal staple chips.
 6. [x] **NovaFit Pro Tier ($9.99/mo)**: Upgrade flow and gating for advanced biometric readiness and unlimited plan adaptations.
-7. [ ] **AI Coach Voice Check-in**: Spoken feedback from coach on weekly progress submit.
+7. [x] **AI Coach Voice Check-in**: Spoken feedback and weekly debrief from Coach Leo using browser speech synthesis.
 8. [ ] **Bundle Optimization**: Code-split Recharts and Firebase chunks below 500kB.
 
 ## OpenBot Automated Schedule

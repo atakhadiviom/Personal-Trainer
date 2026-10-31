@@ -38,6 +38,10 @@ const paths = {
   knee: <><path d="M9 3v7l-2 4v7" /><path d="M15 3v7l2 4v7" /><circle cx="12" cy="12" r="2" /></>,
   hand: <path d="M7 12V6a1.5 1.5 0 0 1 3 0v5V4.5a1.5 1.5 0 0 1 3 0V11V6a1.5 1.5 0 0 1 3 0v8a6 6 0 0 1-6 6c-3 0-4-1.5-6-4l-2-3a1.5 1.5 0 0 1 2.4-1.7z" />,
   neck: <><circle cx="12" cy="6" r="3" /><path d="M9 11v4l-4 3M15 11v4l4 3" /></>,
+  stop: <rect x="6" y="6" width="12" height="12" rx="2" />,
+  volume2: <><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /><path d="M15.54 8.46a5 5 0 0 1 0 7.07" /><path d="M19.07 4.93a10 10 0 0 1 0 14.14" /></>,
+  volumeX: <><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /><line x1="23" y1="9" x2="17" y2="15" /><line x1="17" y1="9" x2="23" y2="15" /></>,
+  copy: <><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></>,
 };
 
 const Icon = ({ name, label, className = '', ...rest }) => (
