@@ -2011,3 +2011,205 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); box-sh
     height: 22px;
   }
 }
+
+/* ─── WORKOUT STREAK & RECOVERY ADVICE ─── */
+.streak-card {
+  margin-bottom: 16px;
+  padding: 16px;
+  border-radius: var(--r-lg);
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+}
+
+.streak-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.streak-flame {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.streak-flame.lit {
+  background: var(--amber-glow);
+  color: var(--primary);
+  box-shadow: 0 0 14px rgba(249, 115, 22, 0.35);
+}
+
+.streak-flame .ui-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.streak-summary {
+  flex: 1;
+  min-width: 160px;
+}
+
+.streak-count {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text-primary);
+}
+
+.streak-count span {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.streak-meta {
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.streak-milestone {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(34, 197, 94, 0.14);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  color: var(--cta);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.streak-strip {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin: 14px 0;
+}
+
+.streak-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.streak-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed var(--border);
+  color: var(--on-primary);
+}
+
+.streak-dot .ui-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.streak-day.trained .streak-dot {
+  border: 2px solid var(--primary);
+  background: var(--primary);
+}
+
+.streak-day.today .streak-dot {
+  outline: 2px solid var(--accent-cyan);
+  outline-offset: 2px;
+}
+
+.streak-initial {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+
+.streak-day.today .streak-initial {
+  color: var(--accent-cyan);
+  font-weight: 700;
+}
+
+.recovery-advice {
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.recovery-advice-head {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.recovery-advice-head > .ui-icon {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.recovery-advice-title {
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+
+.recovery-advice-message {
+  margin-top: 2px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.recovery-advice.status-train { border-color: rgba(34, 197, 94, 0.4); }
+.recovery-advice.status-train .recovery-advice-head > .ui-icon { color: var(--cta); }
+.recovery-advice.status-rest { border-color: rgba(165, 180, 252, 0.45); }
+.recovery-advice.status-rest .recovery-advice-head > .ui-icon { color: var(--lavender); }
+.recovery-advice.status-recover { border-color: rgba(103, 232, 249, 0.4); }
+.recovery-advice.status-recover .recovery-advice-head > .ui-icon { color: var(--accent-cyan); }
+.recovery-advice.status-comeback { border-color: rgba(249, 115, 22, 0.45); }
+.recovery-advice.status-comeback .recovery-advice-head > .ui-icon { color: var(--primary); }
+.recovery-advice.status-start .recovery-advice-head > .ui-icon { color: var(--primary); }
+
+.recovery-tips-toggle {
+  margin-top: 8px;
+  min-height: 44px;
+  padding: 0 4px;
+  background: none;
+  border: none;
+  color: var(--accent-cyan);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.recovery-tips-toggle:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.recovery-tips {
+  margin: 4px 0 0 18px;
+  display: grid;
+  gap: 4px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .streak-flame.lit { animation: streakFlicker 2.4s ease-in-out infinite; }
+}
+
+@keyframes streakFlicker {
+  0%, 100% { box-shadow: 0 0 10px rgba(249, 115, 22, 0.3); }
+  50% { box-shadow: 0 0 18px rgba(249, 115, 22, 0.55); }
+}

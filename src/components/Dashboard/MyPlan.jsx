@@ -6,7 +6,9 @@ import ExerciseRow from './ExerciseRow';
 import RestTimer from './RestTimer';
 import ShareModal from './ShareModal';
 import CoachAudioSummary from './CoachAudioSummary';
+import StreakCard from './StreakCard';
 import { generateCoachScript } from '../../utils/coachVoice';
+import { loadActivityLog, saveActivityLog, recordWorkout, mergeActivityLogs } from '../../utils/streaks';
 import Toast from '../Layout/Toast';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { getAIModel } from '../../utils/aiModel';
@@ -16,6 +18,7 @@ import { getSafeYoutubeUrl } from '../../utils/url';
 const MyPlan = ({ formData, aiPlan }) => {
   const [selectedWeek, setSelectedWeek] = useState(1);
   const [completedExercises, setCompletedExercises] = useState({});
+  const [activityLog, setActivityLog] = useState(loadActivityLog);
   const [weeklyPlans, setWeeklyPlans] = useState({});
   const [swapping, setSwapping] = useState(null);
   const [localPlan, setLocalPlan] = useState(null);
@@ -133,6 +136,7 @@ const MyPlan = ({ formData, aiPlan }) => {
           // Only update local state if user hasn't already toggled exercises since mount
           if (!isDirtyRef.current && data.completedExercises) setCompletedExercises(loadedCompleted);
           if (data.weeklyPlans) setWeeklyPlans(loadedWeeklyPlans);
+          if (data.activityLog) setActivityLog(prev => mergeActivityLogs(prev, data.activityLog));
           if (data.formData?.weight) setCheckinData(prev => ({ ...prev, currentWeight: data.formData.weight }));
 
           // Cache to localStorage for offline access
@@ -218,6 +222,12 @@ const MyPlan = ({ formData, aiPlan }) => {
 
   const toggleExercise = (dayId, exIdx) => {
     const key = `w${selectedWeek}_${dayId}_${exIdx}`;
+    const oldKey = selectedWeek === 1 ? `${dayId}_${exIdx}` : null;
+    const wasDone = !!(completedExercises[key] || (oldKey && completedExercises[oldKey]));
+    if (!wasDone) {
+      const dayLabel = getScheduleForWeek(selectedWeek)?.find(d => d.id === dayId)?.label;
+      setActivityLog(prev => recordWorkout(prev, { label: dayLabel }));
+    }
     setCompletedExercises(prev => {
       const updated = { ...prev, [key]: !prev[key] };
       isDirtyRef.current = true;
@@ -241,13 +251,17 @@ const MyPlan = ({ formData, aiPlan }) => {
       const user = auth.currentUser;
       if (user) {
         try {
-          await updateDoc(doc(db, 'users', user.uid), { completedExercises });
+          await updateDoc(doc(db, 'users', user.uid), { completedExercises, activityLog });
           isDirtyRef.current = false;
         } catch (e) { console.warn('Could not save exercise state:', e); }
       }
     }, 1000);
     return () => clearTimeout(t);
-  }, [completedExercises]);
+  }, [completedExercises, activityLog]);
+
+  useEffect(() => {
+    saveActivityLog(activityLog);
+  }, [activityLog]);
 
   const handleShare = () => {
     setShowShareModal(true);
@@ -677,6 +691,8 @@ Return ONLY valid JSON in this shape:
           </div>
         </div>
       )}
+
+      <StreakCard activityLog={activityLog} sleepHours={sleepData} />
 
       {/* Feature 2: Progress Rings / Activity Pills */}
       {(fitSteps != null || fitCalsBurned != null) && (
