@@ -28,7 +28,7 @@ NovaFit AI: 12-week gym trainer web app with DeepSeek AI workout/nutrition gener
 6. [x] **NovaFit Pro Tier ($9.99/mo)**: Upgrade flow and gating for advanced biometric readiness and unlimited plan adaptations.
 7. [x] **AI Coach Voice Check-in**: Spoken feedback and weekly debrief from Coach Leo using browser speech synthesis.
 8. [x] **Workout Streaks & Recovery Advice**: Consistency streak (2 rest days allowed), 7-day strip, milestones, and rest-day recovery tips driven by sleep and training load.
-9. [ ] **Bundle Optimization**: Code-split Recharts and Firebase chunks below 500kB.
+9. [x] **Bundle Optimization**: Code-split Recharts and Firebase chunks below 500kB.
 
 ## OpenBot Automated Schedule
 - Scheduled Routine: `NovaFit Autonomous Startup Lead` runs daily at 09:00 (Asia/Muscat).

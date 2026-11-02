@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import { manualChunks } from './src/utils/chunkSplitter.js'
 
 export default defineConfig({
   plugins: [
@@ -29,10 +30,7 @@ export default defineConfig({
     sourcemap: 'hidden',
     rollupOptions: {
       output: {
-        manualChunks: (id) => {
-          if (id.includes('node_modules/firebase')) return 'firebase';
-          if (id.includes('node_modules/recharts')) return 'recharts';
-        }
+        manualChunks
       }
     }
   },
