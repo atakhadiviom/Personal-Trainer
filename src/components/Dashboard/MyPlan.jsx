@@ -7,8 +7,19 @@ import RestTimer from './RestTimer';
 import ShareModal from './ShareModal';
 import CoachAudioSummary from './CoachAudioSummary';
 import StreakCard from './StreakCard';
+import PRCard from './PRCard';
 import { generateCoachScript } from '../../utils/coachVoice';
-import { loadActivityLog, saveActivityLog, recordWorkout, mergeActivityLogs } from '../../utils/streaks';
+import { loadActivityLog, saveActivityLog, recordWorkout, mergeActivityLogs, toDateKey } from '../../utils/streaks';
+import {
+  loadSetLog,
+  saveSetLog,
+  logSet,
+  mergeSetLogs,
+  isNewPersonalRecord,
+  getPersonalRecord,
+  getLastSessionSets,
+  formatKg
+} from '../../utils/progressiveOverload';
 import Toast from '../Layout/Toast';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { getAIModel } from '../../utils/aiModel';
@@ -19,6 +30,7 @@ const MyPlan = ({ formData, aiPlan }) => {
   const [selectedWeek, setSelectedWeek] = useState(1);
   const [completedExercises, setCompletedExercises] = useState({});
   const [activityLog, setActivityLog] = useState(loadActivityLog);
+  const [setLog, setSetLog] = useState(loadSetLog);
   const [weeklyPlans, setWeeklyPlans] = useState({});
   const [swapping, setSwapping] = useState(null);
   const [localPlan, setLocalPlan] = useState(null);
@@ -123,7 +135,6 @@ const MyPlan = ({ formData, aiPlan }) => {
           if (parsed && typeof parsed === 'object') setWeeklyPlans(parsed);
         }
       } catch { /* ignore localStorage unavailable */ }
-
       const user = auth.currentUser;
       if (!user) return;
       try {
@@ -137,6 +148,7 @@ const MyPlan = ({ formData, aiPlan }) => {
           if (!isDirtyRef.current && data.completedExercises) setCompletedExercises(loadedCompleted);
           if (data.weeklyPlans) setWeeklyPlans(loadedWeeklyPlans);
           if (data.activityLog) setActivityLog(prev => mergeActivityLogs(prev, data.activityLog));
+          if (data.setLog) setSetLog(prev => mergeSetLogs(prev, data.setLog));
           if (data.formData?.weight) setCheckinData(prev => ({ ...prev, currentWeight: data.formData.weight }));
 
           // Cache to localStorage for offline access
@@ -245,19 +257,42 @@ const MyPlan = ({ formData, aiPlan }) => {
     });
   };
 
+  const handleLogSet = (exerciseName, weightKg, reps) => {
+    const isPR = isNewPersonalRecord(setLog, { exercise: exerciseName, weightKg, reps });
+    setSetLog(prev => {
+      const next = logSet(prev, { exercise: exerciseName, weightKg, reps });
+      saveSetLog(next);
+      return next;
+    });
+    isDirtyRef.current = true;
+    setActivityLog(prev => {
+      const todayKey = toDateKey(new Date());
+      if (prev[todayKey]) return prev;
+      const dayLabel = getScheduleForWeek(selectedWeek)?.find(day =>
+        day.exercises.some(ex => ex.name === exerciseName)
+      )?.label;
+      return recordWorkout(prev, { label: dayLabel || 'Strength session' });
+    });
+    setToast({
+      message: isPR
+        ? `New PR on ${exerciseName}! ${formatKg(weightKg)} × ${reps} 🔥`
+        : `Set logged: ${exerciseName} ${formatKg(weightKg)} × ${reps}.`,
+      type: 'success'
+    });
+  };
+
   useEffect(() => {
-    if (!isDirtyRef.current) return;
-    const t = setTimeout(async () => {
+    if (!isDirtyRef.current) return;    const t = setTimeout(async () => {
       const user = auth.currentUser;
       if (user) {
         try {
-          await updateDoc(doc(db, 'users', user.uid), { completedExercises, activityLog });
+          await updateDoc(doc(db, 'users', user.uid), { completedExercises, activityLog, setLog });
           isDirtyRef.current = false;
         } catch (e) { console.warn('Could not save exercise state:', e); }
       }
     }, 1000);
     return () => clearTimeout(t);
-  }, [completedExercises, activityLog]);
+  }, [completedExercises, activityLog, setLog]);
 
   useEffect(() => {
     saveActivityLog(activityLog);
@@ -612,6 +647,7 @@ Return ONLY valid JSON in this shape:
   };
 
   const schedule = getScheduleForWeek(selectedWeek);
+  const weekExercises = schedule ? schedule.flatMap(day => day.exercises) : [];
   const currentWeekDone = isWeekComplete(selectedWeek, schedule, completedExercises);
   const nextWeekExists = !!getScheduleForWeek(selectedWeek + 1);
   const showCheckinBanner = currentWeekDone && !nextWeekExists && selectedWeek < 12;
@@ -693,6 +729,7 @@ Return ONLY valid JSON in this shape:
       )}
 
       <StreakCard activityLog={activityLog} sleepHours={sleepData} />
+      <PRCard setLog={setLog} exercises={weekExercises} />
 
       {/* Feature 2: Progress Rings / Activity Pills */}
       {(fitSteps != null || fitCalsBurned != null) && (
@@ -826,6 +863,9 @@ Return ONLY valid JSON in this shape:
                           toggleExercise={toggleExercise}
                           handleSwap={handleSwap}
                           onStartTimer={(rest, name) => setActiveTimer({ rest, name })}
+                          lastSet={getLastSessionSets(setLog, ex.name).slice(-1)[0] || null}
+                          personalRecord={getPersonalRecord(setLog, ex.name)}
+                          onLogSet={handleLogSet}
                         />
                       );
                     })}

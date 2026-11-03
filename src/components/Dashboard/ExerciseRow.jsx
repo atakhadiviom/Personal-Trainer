@@ -1,6 +1,10 @@
-import React, { memo } from 'react';
+import React, { memo, useState } from 'react';
 import Icon from '../Layout/Icon';
 import { getSafeYoutubeUrl } from '../../utils/url';
+import { formatKg } from '../../utils/progressiveOverload';
+
+const MAX_REPS = 100;
+const MAX_WEIGHT = 500;
 
 const ExerciseRow = memo(({
   ex,
@@ -11,10 +15,37 @@ const ExerciseRow = memo(({
   isSwapping,
   toggleExercise,
   handleSwap,
-  onStartTimer
+  onStartTimer,
+  lastSet,
+  personalRecord,
+  onLogSet
 }) => {
+  const [logging, setLogging] = useState(false);
+  const [weight, setWeight] = useState('');
+  const [reps, setReps] = useState('');
+
+  const startLogging = () => {
+    if (!logging && lastSet) {
+      setWeight(String(lastSet.weightKg));
+      setReps(String(lastSet.reps));
+    }
+    setLogging(v => !v);
+  };
+
+  const submitSet = (event) => {
+    event.preventDefault();
+    if (!onLogSet) return;
+    const weightKg = Number(weight);
+    const repCount = Number(reps);
+    if (!Number.isFinite(weightKg) || weightKg < 0 || weightKg > MAX_WEIGHT) return;
+    if (!Number.isFinite(repCount) || repCount < 1 || repCount > MAX_REPS) return;
+    onLogSet(ex.name, weightKg, Math.floor(repCount));
+    setLogging(false);
+    setWeight('');
+    setReps('');
+  };
+
   return (
-    // memo() above prevents re-render unless isDone, isSwapping, or ex props change
     <tr className={isDone ? 'exercise-done' : ''} style={{ opacity: isDone ? 0.5 : 1 }}>
       <td>
         <input
@@ -55,7 +86,67 @@ const ExerciseRow = memo(({
           ex.rest
         )}
       </td>
-      <td className="ex-weight">{ex.weight}</td>
+      <td className="ex-weight">
+        <div className="ex-weight-value">
+          {ex.weight}
+          {personalRecord?.e1rm ? (
+            <span className="pr-badge" title={`Best estimated 1RM: ${formatKg(personalRecord.e1rm)}`}>
+              PR {formatKg(personalRecord.e1rm)}
+            </span>
+          ) : null}
+        </div>
+        {onLogSet && (
+          <>
+            <button
+              type="button"
+              className="log-set-toggle"
+              aria-expanded={logging}
+              aria-controls={`log-set-${dayIdx}-${exIdx}`}
+              onClick={startLogging}
+            >
+              {logging ? 'Close' : 'Log set'}
+            </button>
+            {logging && (
+              <form id={`log-set-${dayIdx}-${exIdx}`} className="log-set-form" onSubmit={submitSet}>
+                <label className="log-set-field">
+                  <span>kg</span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    max={MAX_WEIGHT}
+                    step="0.5"
+                    value={weight}
+                    onChange={e => setWeight(e.target.value)}
+                    aria-label={`Weight in kg for ${ex.name}`}
+                    placeholder="0"
+                  />
+                </label>
+                <label className="log-set-field">
+                  <span>reps</span>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min="1"
+                    max={MAX_REPS}
+                    step="1"
+                    value={reps}
+                    onChange={e => setReps(e.target.value)}
+                    aria-label={`Reps for ${ex.name}`}
+                    placeholder="0"
+                  />
+                </label>
+                <button type="submit" className="log-set-save">Save</button>
+                {lastSet && (
+                  <div className="log-set-last">
+                    Last: {formatKg(lastSet.weightKg)} × {lastSet.reps}
+                  </div>
+                )}
+              </form>
+            )}
+          </>
+        )}
+      </td>
       <td>
         <a href={getSafeYoutubeUrl(ex.name)} target="_blank" rel="noreferrer" className="btn-yt"><Icon name="play" /> Watch</a>
       </td>
