@@ -9,6 +9,7 @@ import CoachAudioSummary from './CoachAudioSummary';
 import StreakCard from './StreakCard';
 import PRCard from './PRCard';
 import WorkoutHistoryCard from './WorkoutHistoryCard';
+import TrainingLoadCard from './TrainingLoadCard';
 import { generateCoachScript } from '../../utils/coachVoice';
 import { loadActivityLog, saveActivityLog, recordWorkout, mergeActivityLogs, toDateKey } from '../../utils/streaks';
 import {
@@ -732,6 +733,7 @@ Return ONLY valid JSON in this shape:
       <StreakCard activityLog={activityLog} sleepHours={sleepData} />
       <PRCard setLog={setLog} exercises={weekExercises} />
       <WorkoutHistoryCard setLog={setLog} />
+      <TrainingLoadCard setLog={setLog} sleepHours={sleepData} />
 
       {/* Feature 2: Progress Rings / Activity Pills */}
       {(fitSteps != null || fitCalsBurned != null) && (
