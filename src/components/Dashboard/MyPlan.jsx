@@ -10,6 +10,7 @@ import StreakCard from './StreakCard';
 import PRCard from './PRCard';
 import WorkoutHistoryCard from './WorkoutHistoryCard';
 import TrainingLoadCard from './TrainingLoadCard';
+import WorkoutSession from './WorkoutSession';
 import { generateCoachScript } from '../../utils/coachVoice';
 import { loadActivityLog, saveActivityLog, recordWorkout, mergeActivityLogs, toDateKey } from '../../utils/streaks';
 import {
@@ -27,6 +28,7 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { getAIModel } from '../../utils/aiModel';
 import * as googleFit from '../../utils/googleFitService';
 import { getSafeYoutubeUrl } from '../../utils/url';
+import { loadActiveSession, sessionProgress } from '../../utils/workoutSession';
 
 const MyPlan = ({ formData, aiPlan }) => {
   const [selectedWeek, setSelectedWeek] = useState(1);
@@ -41,6 +43,8 @@ const MyPlan = ({ formData, aiPlan }) => {
   const [activeTimer, setActiveTimer] = useState(null);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showCheckin, setShowCheckin] = useState(false);
+  const [sessionLaunch, setSessionLaunch] = useState(null);
+  const [resumeSession, setResumeSession] = useState(() => loadActiveSession());
   const [showCoachAudio, setShowCoachAudio] = useState(false);
   const [coachDebriefData, setCoachDebriefData] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -283,8 +287,64 @@ const MyPlan = ({ formData, aiPlan }) => {
     });
   };
 
+  const startSession = (day) => {
+    setSessionLaunch({ day, initialSession: null });
+    setResumeSession(null);
+  };
+
+  const resumeActiveSession = () => {
+    if (!resumeSession) return;
+    setSessionLaunch({ day: null, initialSession: resumeSession });
+  };
+
+  const markDayComplete = (day) => {
+    if (!day) return;
+    setActivityLog(prev => recordWorkout(prev, { label: day.label }));
+    setCompletedExercises(prev => {
+      const updated = { ...prev };
+      let changed = false;
+      day.exercises.forEach((_, exIdx) => {
+        const key = `w${selectedWeek}_${day.id}_${exIdx}`;
+        if (!updated[key]) {
+          updated[key] = true;
+          changed = true;
+        }
+      });
+      if (!changed) return prev;
+      isDirtyRef.current = true;
+      try {
+        localStorage.setItem('novafit_cached_completed', JSON.stringify(updated));
+      } catch { /* ignore */ }
+      const weekSchedule = getScheduleForWeek(selectedWeek);
+      if (!getScheduleForWeek(selectedWeek + 1) && selectedWeek < 12
+        && isWeekComplete(selectedWeek, weekSchedule, updated)) {
+        setTimeout(() => setShowCheckin(true), 600);
+      }
+      return updated;
+    });
+  };
+
+  const handleSessionComplete = (summary) => {
+    if (!summary) return;
+    setResumeSession(null);
+    if (summary.complete) {
+      const day = (getScheduleForWeek(selectedWeek) || []).find(d => d.id === summary.dayId);
+      markDayComplete(day);
+      setToast({
+        message: `${summary.label || 'Session'} complete — ${summary.sets} sets, ${summary.volumeKg.toLocaleString()} kg moved 💪`,
+        type: 'success'
+      });
+    } else {
+      setToast({
+        message: `Session saved — ${summary.sets} sets logged. Pick up where you left off anytime.`,
+        type: 'success'
+      });
+    }
+  };
+
   useEffect(() => {
-    if (!isDirtyRef.current) return;    const t = setTimeout(async () => {
+    if (!isDirtyRef.current) return;
+    const t = setTimeout(async () => {
       const user = auth.currentUser;
       if (user) {
         try {
@@ -653,6 +713,7 @@ Return ONLY valid JSON in this shape:
   const currentWeekDone = isWeekComplete(selectedWeek, schedule, completedExercises);
   const nextWeekExists = !!getScheduleForWeek(selectedWeek + 1);
   const showCheckinBanner = currentWeekDone && !nextWeekExists && selectedWeek < 12;
+  const resumeProgress = resumeSession ? sessionProgress(resumeSession) : null;
 
   if (!localPlan) {
     return (
@@ -709,6 +770,20 @@ Return ONLY valid JSON in this shape:
       />
       {error && <div className="alert-box alert-warning" style={{ marginBottom: '16px' }}>{error}</div>}
 
+      {sessionLaunch && (
+        <WorkoutSession
+          day={sessionLaunch.day}
+          initialSession={sessionLaunch.initialSession}
+          setLog={setLog}
+          onLogSet={handleLogSet}
+          onComplete={handleSessionComplete}
+          onClose={() => {
+            setSessionLaunch(null);
+            setResumeSession(loadActiveSession());
+          }}
+        />
+      )}
+
       {/* Week Complete Banner */}
       {showCheckinBanner && (
         <button
@@ -757,6 +832,21 @@ Return ONLY valid JSON in this shape:
           <span style={{ fontSize: '0.85rem', color: 'var(--accent)' }}><Icon name="footprints" /> You're behind today — a 10-min walk would close the gap!</span>
           <button onClick={() => { setNudgeDismissed(true); sessionStorage.setItem('gfit_nudge_dismissed', '1'); }} aria-label="Dismiss" style={{ background: 'none', border: 'none', color: 'var(--text-dim)', fontSize: '1.4rem', cursor: 'pointer', lineHeight: 1, minWidth: '44px', minHeight: '44px' }}>×</button>
         </div>
+      )}
+
+      {/* Resume an interrupted session */}
+      {resumeSession && !sessionLaunch && (
+        <button type="button" className="resume-session-bar" onClick={resumeActiveSession} data-testid="resume-session">
+          <span className="resume-session-icon" aria-hidden="true"><Icon name="play" /></span>
+          <span className="resume-session-text">
+            <strong>Resume {resumeSession.label}</strong>
+            <span>
+              {resumeProgress.doneSets} of {resumeProgress.totalSets} sets logged
+              {resumeProgress.percent > 0 ? ` · ${resumeProgress.percent}% done` : ''}
+            </span>
+          </span>
+          <span className="resume-session-cta">Continue</span>
+        </button>
       )}
 
       {/* Week Selector */}
@@ -822,8 +912,22 @@ Return ONLY valid JSON in this shape:
           {/* Daily Schedule */}
           {schedule.map((day, dayIdx) => (
             <div key={dayIdx} className="section-card" style={{ borderTop: '4px solid var(--accent-cyan)', marginBottom: '24px' }}>
-              <div className="section-header">
-                <h3 style={{ color: 'var(--accent-cyan)' }}>{day.label}</h3>
+              <div className="section-header day-header">
+                <div>
+                  <h3 style={{ color: 'var(--accent-cyan)' }}>{day.label}</h3>
+                  <p className="day-meta">
+                    {day.exercises.length} exercises · {day.exercises.reduce((sum, ex) => sum + (Number(ex.sets) || 0), 0)} sets
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="session-start-btn"
+                  onClick={() => startSession(day)}
+                  aria-label={`Start guided workout for ${day.label}`}
+                  data-testid={`start-session-${day.id}`}
+                >
+                  <Icon name="play" /> Start
+                </button>
               </div>
 
               <div className="phase warmup-phase">
