@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ProfilePage from '../ProfilePage';
 import { auth } from '../../../firebase';
@@ -95,10 +95,10 @@ describe('ProfilePage', () => {
   });
 
   it('renders fallback dashes for missing profile stats', () => {
-    render(<ProfilePage formData={{}} resetWizard={mockResetWizard} />);
+    const { container } = render(<ProfilePage formData={{}} resetWizard={mockResetWizard} />);
 
-    const dashes = screen.getAllByText('—');
-    expect(dashes.length).toBe(7); // age, weight, height, goal, gym, location, tdee
+    const stats = within(container.querySelector('.profile-stats-grid'));
+    expect(stats.getAllByText('—')).toHaveLength(7); // age, weight, height, goal, gym, location, tdee
   });
 
   it('renders weight projection chart when weight is present', () => {

@@ -5,6 +5,7 @@ import ProModal from './ProModal';
 import { auth } from '../../firebase';
 import { signOut } from 'firebase/auth';
 import WeightProjectionChart from './WeightProjectionChart';
+import BodyProgressCard from './BodyProgressCard';
 import * as googleFit from '../../utils/googleFitService';
 import { isProSubscriber, getSubscriptionDetails, onSubscriptionChange } from '../../utils/subscription';
 
@@ -124,6 +125,12 @@ const ProfilePage = ({ formData, user, resetWizard }) => {
             weight={formData.weight}
             goal={formData.goal}
             dynamicTDEE={dynamicTDEE}
+          />
+
+          <BodyProgressCard
+            goal={formData.goal || 'fatloss'}
+            initialWeight={formData.weight}
+            onNotify={(message, type) => setToast({ message, type })}
           />
 
           {/* Actions */}

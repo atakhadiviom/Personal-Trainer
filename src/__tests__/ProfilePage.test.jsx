@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import ProfilePage from '../components/Dashboard/ProfilePage';
 import { auth } from '../firebase';
@@ -81,9 +81,9 @@ describe('ProfilePage', () => {
   });
 
   it('handles missing formData gracefully', () => {
-    render(<ProfilePage formData={{}} resetWizard={vi.fn()} />);
-    const emDashes = screen.getAllByText('—');
-    expect(emDashes.length).toBe(7);
+    const { container } = render(<ProfilePage formData={{}} resetWizard={vi.fn()} />);
+    const stats = within(container.querySelector('.profile-stats-grid'));
+    expect(stats.getAllByText('—')).toHaveLength(7);
   });
 
   it('calls resetWizard on Recalibrate button click', () => {

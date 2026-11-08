@@ -33,6 +33,7 @@ NovaFit AI: 12-week gym trainer web app with DeepSeek AI workout/nutrition gener
 11. [x] **Workout History & Analytics**: 8-week tonnage trend, Monday-start training calendar heatmap, recent session cards, per-exercise breakdown with 14-day volume trend, and CSV export.
 12. [x] **Load & Recovery Advisor**: acute:chronic workload ratio (7-day vs 4-week average), zone gauge, week-over-week ramp, monotony, and deload/caution/rest coaching derived from the set log — no new storage.
 13. [x] **Guided Workout Session Player**: full-screen set-by-set mode from any training day — coach-prefilled load/reps, set dots, rest countdown with +30s/skip, undo and skip exercise, live PR detection, session summary, and 12-hour resume after an interruption.
+14. [x] **Body Progress & Photo Timeline**: weight/waist/chest/arm/hips/thigh check-ins with per-metric trends, same-day merge, goal-aware coaching insight, private on-device photo gallery with before/after compare slider, and a month-grouped timeline.
 
 ## OpenBot Automated Schedule
 - Scheduled Routine: `NovaFit Autonomous Startup Lead` runs daily at 09:00 (Asia/Muscat).
