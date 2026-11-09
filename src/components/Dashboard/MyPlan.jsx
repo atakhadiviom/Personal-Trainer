@@ -11,6 +11,7 @@ import PRCard from './PRCard';
 import WorkoutHistoryCard from './WorkoutHistoryCard';
 import TrainingLoadCard from './TrainingLoadCard';
 import WorkoutSession from './WorkoutSession';
+import AdherenceCard from './AdherenceCard';
 import { generateCoachScript } from '../../utils/coachVoice';
 import { loadActivityLog, saveActivityLog, recordWorkout, mergeActivityLogs, toDateKey } from '../../utils/streaks';
 import {
@@ -67,6 +68,11 @@ const MyPlan = ({ formData, aiPlan }) => {
 
   const errorTimeoutRef = useRef(null);
   const isDirtyRef = useRef(false);
+
+  // Adherence scorecard targets mirror the Calorie tab so both agree on the daily budget.
+  const weightKg = parseInt(formData?.weight, 10) || 75;
+  const targetCals = Math.round(formData?.goal === 'fatloss' ? weightKg * 22 : weightKg * 30);
+  const proteinTarget = Math.round(weightKg * 2);
 
   const displayError = (msg) => {
     setError(msg);
@@ -805,6 +811,13 @@ Return ONLY valid JSON in this shape:
         </div>
       )}
 
+      <AdherenceCard
+        activityLog={activityLog}
+        daysPerWeek={formData?.daysPerWeek}
+        goal={formData?.goal || 'fatloss'}
+        targetCals={targetCals}
+        proteinTarget={proteinTarget}
+      />
       <StreakCard activityLog={activityLog} sleepHours={sleepData} />
       <PRCard setLog={setLog} exercises={weekExercises} />
       <WorkoutHistoryCard setLog={setLog} />
