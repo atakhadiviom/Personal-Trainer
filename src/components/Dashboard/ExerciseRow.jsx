@@ -89,6 +89,9 @@ const ExerciseRow = memo(({
       <td className="ex-weight">
         <div className="ex-weight-value">
           {ex.weight}
+          {ex.deload ? (
+            <span className="deload-badge" title="Deload week — reduced load and one fewer set">deload</span>
+          ) : null}
           {personalRecord?.e1rm ? (
             <span className="pr-badge" title={`Best estimated 1RM: ${formatKg(personalRecord.e1rm)}`}>
               PR {formatKg(personalRecord.e1rm)}

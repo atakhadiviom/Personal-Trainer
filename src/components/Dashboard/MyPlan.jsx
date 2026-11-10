@@ -10,6 +10,7 @@ import StreakCard from './StreakCard';
 import PRCard from './PRCard';
 import WorkoutHistoryCard from './WorkoutHistoryCard';
 import TrainingLoadCard from './TrainingLoadCard';
+import DeloadCard from './DeloadCard';
 import WorkoutSession from './WorkoutSession';
 import AdherenceCard from './AdherenceCard';
 import { generateCoachScript } from '../../utils/coachVoice';
@@ -30,6 +31,15 @@ import { getAIModel } from '../../utils/aiModel';
 import * as googleFit from '../../utils/googleFitService';
 import { getSafeYoutubeUrl } from '../../utils/url';
 import { loadActiveSession, sessionProgress } from '../../utils/workoutSession';
+import {
+  buildDeloadSchedule,
+  loadDeloadState,
+  saveDeloadState,
+  clearDeloadState,
+  saveDeloadSnapshot,
+  loadDeloadSnapshot,
+  clearDeloadSnapshot
+} from '../../utils/deloadWeek';
 
 const MyPlan = ({ formData, aiPlan }) => {
   const [selectedWeek, setSelectedWeek] = useState(1);
@@ -58,6 +68,11 @@ const MyPlan = ({ formData, aiPlan }) => {
   const [nudgeDismissed, setNudgeDismissed] = useState(!!sessionStorage.getItem('gfit_nudge_dismissed'));
   const [heartRateForCheckin, setHeartRateForCheckin] = useState(null);
   const [sleepHistoryForCheckin, setSleepHistoryForCheckin] = useState([]);
+  const [deloadStates, setDeloadStates] = useState(() => {
+    const states = {};
+    for (let w = 1; w <= 12; w += 1) states[w] = loadDeloadState(w);
+    return states;
+  });
   const [checkinData, setCheckinData] = useState({
     currentWeight: formData?.weight || '',
     weekRating: 'perfect',
@@ -403,8 +418,78 @@ Return ONLY this JSON (no markdown):
     }
   };
 
-  const handleOpenCoachDebrief = (targetWeek = selectedWeek) => {
-    const checkinWeek = targetWeek > 1 ? targetWeek - 1 : 1;
+  const persistWeekSchedule = async (week, nextSchedule) => {
+    const user = auth.currentUser;
+    if (week === 1) {
+      const updatedPlan = JSON.parse(JSON.stringify(localPlan));
+      updatedPlan.workout = updatedPlan.workout || {};
+      updatedPlan.workout.schedule = nextSchedule;
+      setLocalPlan(updatedPlan);
+      if (user) await updateDoc(doc(db, 'users', user.uid), { aiPlan: updatedPlan });
+    } else {
+      const updatedWeekly = JSON.parse(JSON.stringify(weeklyPlans));
+      const bucket = updatedWeekly[String(week)] || {};
+      updatedWeekly[String(week)] = { ...bucket, schedule: nextSchedule };
+      setWeeklyPlans(updatedWeekly);
+      if (user) await updateDoc(doc(db, 'users', user.uid), { weeklyPlans: updatedWeekly });
+    }
+  };
+
+  const handleApplyDeload = async ({ ratio } = {}) => {
+    const week = selectedWeek;
+    const currentSchedule = getScheduleForWeek(week);
+    if (!currentSchedule?.length) {
+      displayError('This week has no plan to deload yet.');
+      return;
+    }
+    const result = buildDeloadSchedule(currentSchedule, setLog, { ratio });
+    if (!result.changes.length) {
+      displayError('No lifts to adjust this week.');
+      return;
+    }
+    try {
+      saveDeloadSnapshot(week, currentSchedule);
+      await persistWeekSchedule(week, result.schedule);
+      const state = {
+        appliedAt: toDateKey(new Date()),
+        ratio: result.ratio,
+        changes: result.changes.slice(0, 24),
+        setsBefore: result.totalSetsBefore,
+        setsAfter: result.totalSetsAfter,
+        setsDropped: Math.max(0, result.totalSetsBefore - result.totalSetsAfter)
+      };
+      saveDeloadState(week, state);
+      setDeloadStates(prev => ({ ...prev, [week]: state }));
+      setToast({
+        message: `Deload applied to Week ${week} — ${Math.round(result.ratio * 100)}% loads, ${state.setsDropped} sets removed.`,
+        type: 'success'
+      });
+    } catch (err) {
+      console.warn('Could not apply deload:', err);
+      displayError('Deload could not be saved. Try again.');
+    }
+  };
+
+  const handleRevertDeload = async () => {
+    const week = selectedWeek;
+    const snapshot = loadDeloadSnapshot(week);
+    if (!snapshot) {
+      displayError('No saved plan to restore for this week.');
+      return;
+    }
+    try {
+      await persistWeekSchedule(week, snapshot);
+      clearDeloadSnapshot(week);
+      clearDeloadState(week);
+      setDeloadStates(prev => ({ ...prev, [week]: null }));
+      setToast({ message: `Week ${week} restored to the original plan.`, type: 'success' });
+    } catch (err) {
+      console.warn('Could not revert deload:', err);
+      displayError('Could not restore the original plan. Try again.');
+    }
+  };
+
+  const handleOpenCoachDebrief = (targetWeek = selectedWeek) => {    const checkinWeek = targetWeek > 1 ? targetWeek - 1 : 1;
     let debrief = null;
     try {
       const stored = localStorage.getItem(`novafit_debrief_w${checkinWeek}`);
@@ -822,6 +907,14 @@ Return ONLY valid JSON in this shape:
       <PRCard setLog={setLog} exercises={weekExercises} />
       <WorkoutHistoryCard setLog={setLog} />
       <TrainingLoadCard setLog={setLog} sleepHours={sleepData} />
+      <DeloadCard
+        setLog={setLog}
+        schedule={schedule}
+        week={selectedWeek}
+        applied={deloadStates[selectedWeek] || null}
+        onApply={handleApplyDeload}
+        onRevert={handleRevertDeload}
+      />
 
       {/* Feature 2: Progress Rings / Activity Pills */}
       {(fitSteps != null || fitCalsBurned != null) && (

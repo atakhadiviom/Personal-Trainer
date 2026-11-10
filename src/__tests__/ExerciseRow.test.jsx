@@ -142,5 +142,24 @@ describe('ExerciseRow Component', () => {
     expect(onStartTimer).toHaveBeenCalledTimes(1);
     expect(onStartTimer).toHaveBeenCalledWith('60s', 'Bench Press');
   });
+
+  it('flags a deload-week weight with a badge', () => {
+    render(
+      <table>
+        <tbody>
+          <ExerciseRow
+            {...defaultProps}
+            ex={{ ...defaultProps.ex, weight: '65 kg', sets: 2, deload: true }}
+            toggleExercise={vi.fn()}
+            handleSwap={vi.fn()}
+          />
+        </tbody>
+      </table>
+    );
+
+    expect(screen.getByText('65 kg')).toBeInTheDocument();
+    expect(screen.getByText('deload')).toBeInTheDocument();
+    expect(screen.getByText('2 × 10')).toBeInTheDocument();
+  });
 });
 
