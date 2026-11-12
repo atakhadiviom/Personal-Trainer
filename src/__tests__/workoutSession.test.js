@@ -4,6 +4,7 @@ import {
   createSession,
   currentExerciseIndex,
   formatSessionDuration,
+  getAutoRegulatedSet,
   getSetDefaults,
   isSessionComplete,
   logSessionSet,
@@ -163,6 +164,41 @@ describe('workoutSession engine', () => {
   it('prefills bodyweight exercises at zero load', () => {
     const day = { id: 'd', label: 'Core', exercises: [{ name: 'Hollow Hold', sets: 3, reps: '30s', weight: 'BW' }] };
     expect(getSetDefaults(createSession(day, { now: NOW }), {})).toEqual({ weight: '0', reps: '30' });
+  });
+
+  it('stores RPE on a logged set and drops unreadable values', () => {
+    let session = createSession(DAY, { now: NOW });
+    session = logSessionSet(session, { weightKg: 40, reps: 10, rpe: 8 });
+    expect(session.exercises[0].logged[0]).toMatchObject({ weightKg: 40, reps: 10, rpe: 8 });
+
+    session = logSessionSet(session, { weightKg: 40, reps: 8, rpe: 15 });
+    expect(session.exercises[0].logged[1].rpe).toBeNull();
+  });
+
+  it('autoregulates the next set only when the last set carries an RPE', () => {
+    const withRpe = logSessionSet(createSession(DAY, { now: NOW }), { weightKg: 40, reps: 12, rpe: 8 });
+    expect(getAutoRegulatedSet(withRpe)).toMatchObject({
+      action: 'increase', weightKg: 45, reps: 8, rir: 2
+    });
+    expect(getSetDefaults(withRpe, {})).toEqual({ weight: '45', reps: '8' });
+
+    const withoutRpe = logSessionSet(createSession(DAY, { now: NOW }), { weightKg: 40, reps: 12 });
+    expect(getAutoRegulatedSet(withoutRpe)).toBeNull();
+    expect(getSetDefaults(withoutRpe, {})).toEqual({ weight: '40', reps: '12' });
+  });
+
+  it('stops autoregulating on the last planned set of an exercise', () => {
+    let session = createSession(DAY, { now: NOW });
+    session = logSessionSet(session, { weightKg: 40, reps: 12, rpe: 8 });
+    session = logSessionSet(session, { weightKg: 45, reps: 8, rpe: 9 });
+    expect(session.exercises[0].logged).toHaveLength(2);
+    expect(getAutoRegulatedSet(session)).toBeNull();
+  });
+
+  it('keeps RPE through a session restore', () => {
+    const live = logSessionSet(createSession(DAY, { now: new Date() }), { weightKg: 40, reps: 9, rpe: 8 });
+    saveActiveSession(live);
+    expect(loadActiveSession().exercises[0].logged[0].rpe).toBe(8);
   });
 
   describe('persistence', () => {

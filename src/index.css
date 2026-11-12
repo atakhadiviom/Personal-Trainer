@@ -3499,6 +3499,104 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); box-sh
   font-size: 0.88rem;
 }
 
+.ws-auto {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  border: 1px solid rgba(34, 211, 238, 0.28);
+  background: rgba(34, 211, 238, 0.08);
+}
+
+.ws-auto.is-reduce {
+  border-color: rgba(251, 191, 36, 0.32);
+  background: rgba(251, 191, 36, 0.08);
+}
+
+.ws-auto-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.74rem;
+  color: var(--text-primary);
+}
+
+.ws-auto-head .ui-icon { width: 13px; height: 13px; color: var(--accent-cyan); }
+.ws-auto.is-reduce .ui-icon { color: #fbbf24; }
+
+.ws-auto-target {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--accent-cyan);
+}
+
+.ws-auto.is-reduce .ws-auto-target { color: #fbbf24; }
+
+.ws-auto p {
+  margin: 5px 0 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.ws-rpe {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.ws-rpe-label {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+}
+
+.ws-rpe-label em {
+  font-style: normal;
+  text-transform: none;
+  letter-spacing: 0;
+  opacity: 0.6;
+}
+
+.ws-rpe-chips { display: flex; gap: 5px; }
+
+.ws-rpe-chip {
+  min-width: 34px;
+  min-height: 34px;
+  padding: 0 6px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  cursor: pointer;
+  transition: color 0.15s var(--ease), border-color 0.15s var(--ease), background 0.15s var(--ease);
+}
+
+.ws-rpe-chip:hover { color: var(--text-primary); border-color: var(--text-dim); }
+
+.ws-rpe-chip.is-active {
+  color: #0b0f14;
+  background: var(--accent-cyan);
+  border-color: var(--accent-cyan);
+  font-weight: 700;
+}
+
+.ws-rpe-chip:focus-visible {
+  outline: 2px solid var(--accent-cyan);
+  outline-offset: 2px;
+}
+
+.ws-rpe-hint { font-size: 0.7rem; color: var(--text-dim); }
+
+@media (max-width: 520px) {
+  .ws-rpe-hint { width: 100%; }
+}
+
 .ws-rest {
   margin-top: 14px;
   padding: 10px 12px;

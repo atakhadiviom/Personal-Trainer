@@ -195,4 +195,44 @@ describe('WorkoutSession', () => {
     expect(onClose).toHaveBeenCalled();
     expect(localStorage.getItem(ACTIVE_SESSION_KEY)).toContain('Lat Pulldown');
   });
+
+  it('autoregulates the next set from the RPE of the set just logged', async () => {
+    const user = userEvent.setup();
+    setup();
+
+    await user.clear(screen.getByLabelText(/^Reps for/i));
+    await user.type(screen.getByLabelText(/^Reps for/i), '12');
+    await user.click(screen.getByRole('button', { name: 'RPE 8' }));
+    expect(screen.getByRole('button', { name: 'RPE 8' })).toHaveAttribute('aria-pressed', 'true');
+
+    await user.click(screen.getByRole('button', { name: /Log set/i }));
+
+    expect(screen.getByTestId('ws-auto')).toHaveTextContent('Auto-regulated next set');
+    expect(screen.getByTestId('ws-auto')).toHaveTextContent('45 kg × 8');
+    expect(screen.getByLabelText(/Weight in kg for Lat Pulldown/i)).toHaveValue(45);
+    expect(screen.getByLabelText(/Reps for Lat Pulldown/i)).toHaveValue(8);
+    // The choice resets so it never silently applies to a later set.
+    expect(screen.getByRole('button', { name: 'RPE 8' })).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('shows no autoregulation banner for a set logged without RPE', async () => {
+    const user = userEvent.setup();
+    setup();
+
+    await logSetViaForm(user, { weight: 40, reps: 10 });
+
+    expect(screen.queryByTestId('ws-auto')).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/Weight in kg for Lat Pulldown/i)).toHaveValue(40);
+  });
+
+  it('lets the athlete clear an RPE choice', async () => {
+    const user = userEvent.setup();
+    setup();
+
+    const chip = screen.getByRole('button', { name: 'RPE 9' });
+    await user.click(chip);
+    expect(chip).toHaveAttribute('aria-pressed', 'true');
+    await user.click(chip);
+    expect(chip).toHaveAttribute('aria-pressed', 'false');
+  });
 });

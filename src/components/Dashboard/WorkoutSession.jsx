@@ -7,6 +7,7 @@ import {
   createSession,
   currentExerciseIndex,
   formatSessionDuration,
+  getAutoRegulatedSet,
   getSetDefaults,
   isSessionComplete,
   logSessionSet,
@@ -20,6 +21,7 @@ import {
   MAX_REPS,
   MAX_WEIGHT_KG
 } from '../../utils/workoutSession';
+import { RPE_MIN, RPE_MAX } from '../../utils/autoregulation';
 
 const playCue = () => {
   try {
@@ -46,6 +48,7 @@ const WorkoutSession = ({ day, initialSession = null, setLog = {}, onLogSet, onC
   const [session, setSession] = useState(() => initialSession || createSession(day));
   const [weight, setWeight] = useState('');
   const [reps, setReps] = useState('');
+  const [rpe, setRpe] = useState('');
   const [restLeft, setRestLeft] = useState(0);
   const [prCount, setPrCount] = useState(0);
   const [showSummary, setShowSummary] = useState(false);
@@ -60,6 +63,7 @@ const WorkoutSession = ({ day, initialSession = null, setLog = {}, onLogSet, onC
   const progress = useMemo(() => sessionProgress(session), [session]);
   const totals = useMemo(() => sessionTotals(session), [session]);
   const defaults = useMemo(() => getSetDefaults(session, setLog), [session, setLog]);
+  const autoPlan = useMemo(() => getAutoRegulatedSet(session), [session]);
   const resting = restLeft > 0;
 
   // Prefill the next set from the coach's target. Synced during render (the same
@@ -70,6 +74,7 @@ const WorkoutSession = ({ day, initialSession = null, setLog = {}, onLogSet, onC
     setAppliedDefaultsKey(defaultsKey);
     setWeight(defaults.weight);
     setReps(defaults.reps);
+    setRpe('');
   }
 
   // Persist after every change so a locked phone never loses a session.
@@ -166,7 +171,7 @@ const WorkoutSession = ({ day, initialSession = null, setLog = {}, onLogSet, onC
     if (!Number.isFinite(kg) || kg < 0 || kg > MAX_WEIGHT_KG) return;
     if (!Number.isFinite(repCount) || repCount < 1 || repCount > MAX_REPS) return;
 
-    const set = { weightKg: kg, reps: Math.floor(repCount) };
+    const set = { weightKg: kg, reps: Math.floor(repCount), rpe: rpe === '' ? null : Number(rpe) };
     const next = logSessionSet(session, set);
     if (next === session) return;
 
@@ -356,6 +361,21 @@ const WorkoutSession = ({ day, initialSession = null, setLog = {}, onLogSet, onC
               </span>
             </div>
 
+            {autoPlan && (
+              <div className={`ws-auto is-${autoPlan.action}`} data-testid="ws-auto" role="status">
+                <div className="ws-auto-head">
+                  <Icon name="trending" />
+                  <strong>Auto-regulated next set</strong>
+                  <span className="ws-auto-target">
+                    {autoPlan.weightKg > 0
+                      ? `${formatKg(autoPlan.weightKg)} × ${autoPlan.reps}`
+                      : `bodyweight × ${autoPlan.reps}`}
+                  </span>
+                </div>
+                <p>{autoPlan.message}</p>
+              </div>
+            )}
+
             <form className="ws-form" onSubmit={handleSubmit}>
               <label className="ws-field">
                 <span>kg</span>
@@ -389,6 +409,31 @@ const WorkoutSession = ({ day, initialSession = null, setLog = {}, onLogSet, onC
                 <Icon name="check" /> Log set
               </button>
             </form>
+
+            <div className="ws-rpe" role="group" aria-label="Effort for this set (RPE, optional)">
+              <span className="ws-rpe-label">
+                Effort <em>optional</em>
+              </span>
+              <div className="ws-rpe-chips">
+                {Array.from({ length: RPE_MAX - RPE_MIN + 1 }).map((_, i) => {
+                  const value = RPE_MIN + i;
+                  const active = Number(rpe) === value;
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      className={`ws-rpe-chip ${active ? 'is-active' : ''}`}
+                      aria-pressed={active}
+                      aria-label={`RPE ${value}`}
+                      onClick={() => setRpe(active ? '' : String(value))}
+                    >
+                      {value}
+                    </button>
+                  );
+                })}
+              </div>
+              <span className="ws-rpe-hint">{rpe ? 'RPE tunes the next set' : '10 = nothing left'}</span>
+            </div>
 
             {resting && (
               <div className="ws-rest" data-testid="ws-rest">

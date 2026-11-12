@@ -13,6 +13,7 @@
 // }
 
 import { parseRepTarget, parseWeightKg, getNextLoadSuggestion, getLastSessionSets } from './progressiveOverload';
+import { suggestNextSet, parseRpe } from './autoregulation';
 
 export const ACTIVE_SESSION_KEY = 'novafit_active_session';
 export const SESSION_MAX_AGE_MS = 12 * 60 * 60 * 1000;
@@ -92,7 +93,7 @@ export const sessionProgress = (session) => {
 };
 
 const cleanSet = (set) => {
-  const { weightKg, reps, at } = set || {};
+  const { weightKg, reps, rpe, at } = set || {};
   const weight = Number(weightKg);
   const count = Number(reps);
   if (!Number.isFinite(weight) || weight < 0 || weight > MAX_WEIGHT_KG) return null;
@@ -100,19 +101,20 @@ const cleanSet = (set) => {
   return {
     weightKg: round1(weight),
     reps: Math.round(count),
+    rpe: parseRpe(rpe),
     at: Number.isFinite(at) ? at : Date.now()
   };
 };
 
 // Logs one set against the current exercise. Invalid input returns the same session.
-export const logSessionSet = (session, { weightKg, reps, at = Date.now(), exerciseIndex } = {}) => {
+export const logSessionSet = (session, { weightKg, reps, rpe = null, at = Date.now(), exerciseIndex } = {}) => {
   const exercises = Array.isArray(session?.exercises) ? session.exercises : null;
   if (!exercises) return session;
   const index = Number.isInteger(exerciseIndex) ? exerciseIndex : currentExerciseIndex(session);
   const exercise = exercises[index];
   if (!exercise || exercise.skipped) return session;
   if ((exercise.logged?.length || 0) >= (exercise.targetSets || 0)) return session;
-  const set = cleanSet({ weightKg, reps, at });
+  const set = cleanSet({ weightKg, reps, rpe, at });
   if (!set) return session;
   return {
     ...session,
@@ -181,8 +183,30 @@ export const formatSessionDuration = (ms) => {
   return `${minutes}:${String(seconds).padStart(2, '0')}`;
 };
 
+// Autoregulated target for the next set of the current exercise. Only an RPE on the
+// set just logged moves the load, so sessions logged without effort data behave as before.
+export const getAutoRegulatedSet = (session) => {
+  const index = currentExerciseIndex(session);
+  if (index === -1) return null;
+  const exercise = session.exercises[index];
+  const logged = exercise?.logged || [];
+  const last = logged[logged.length - 1];
+  if (!last || parseRpe(last.rpe) === null) return null;
+
+  const plan = suggestNextSet({
+    weightKg: last.weightKg,
+    reps: last.reps,
+    rpe: last.rpe,
+    repTarget: parseRepTarget(exercise.reps),
+    remainingSets: (exercise.targetSets || 0) - logged.length
+  });
+  if (!plan || plan.action === 'done') return null;
+  return plan;
+};
+
 // Prefill for the next set: coach's progression target first, then this session's
-// last set, then the athlete's last logged session, then the plan's starting load.
+// last set (autoregulated when its RPE is known), then the athlete's last logged
+// session, then the plan's starting load.
 export const getSetDefaults = (session, setLog = {}) => {
   const index = currentExerciseIndex(session);
   const exercise = index === -1 ? null : session.exercises[index];
@@ -191,6 +215,10 @@ export const getSetDefaults = (session, setLog = {}) => {
   // Mid-session: repeat the load the athlete just used for this exercise.
   const lastLogged = exercise.logged?.[exercise.logged.length - 1];
   if (lastLogged) {
+    const auto = getAutoRegulatedSet(session);
+    if (auto) {
+      return { weight: String(round1(auto.weightKg)), reps: String(auto.reps) };
+    }
     return { weight: String(round1(lastLogged.weightKg)), reps: String(lastLogged.reps) };
   }
 
