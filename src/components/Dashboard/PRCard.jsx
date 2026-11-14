@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Icon from '../Layout/Icon';
 import {
   getPersonalRecords,
@@ -9,6 +9,7 @@ import {
   normalizeExerciseKey,
   formatKg
 } from '../../utils/progressiveOverload';
+import { getLoadStep, onLoadStepChange } from '../../utils/loadSteps';
 
 const ACTION_LABEL = {
   start: 'Start',
@@ -22,12 +23,15 @@ const ACTION_LABEL = {
 const PRCard = ({ setLog = {}, exercises = [], today }) => {
   const now = today || new Date();
   const [showAll, setShowAll] = useState(false);
+  const [loadStep, setLoadStep] = useState(() => getLoadStep());
+
+  useEffect(() => onLoadStepChange(setLoadStep), []);
   const volume = getWeeklyVolume(setLog, { today: now });
   const totalPRs = getPersonalRecords(setLog).length;
   const recentPRs = getRecentPersonalRecords(setLog, { today: now, limit: 3 });
 
   const targets = uniqueExercises(exercises)
-    .map(ex => ({ ex, suggestion: getNextLoadSuggestion(setLog, ex) }))
+    .map(ex => ({ ex, suggestion: getNextLoadSuggestion(setLog, ex, { step: loadStep }) }))
     .filter(item => item.suggestion.weightKg !== null || item.suggestion.action !== 'start')
     .slice(0, showAll ? 12 : 4);
 

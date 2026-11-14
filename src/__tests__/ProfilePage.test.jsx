@@ -120,6 +120,21 @@ describe('ProfilePage', () => {
     expect(screen.getByText('U')).toBeInTheDocument();
   });
 
+  it('lets the athlete pick their gym load jump', () => {
+    localStorage.clear();
+    render(<ProfilePage formData={defaultFormData} resetWizard={vi.fn()} />);
+
+    expect(screen.getByTestId('load-step-standard')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('load-step-current')).toHaveTextContent('2.5 kg jumps');
+
+    fireEvent.click(screen.getByTestId('load-step-stack'));
+
+    expect(screen.getByTestId('load-step-stack')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('load-step-standard')).toHaveAttribute('aria-pressed', 'false');
+    expect(localStorage.getItem('novafit_load_step')).toBe('5');
+    expect(screen.getByTestId('load-step-current')).toHaveTextContent('5 kg jumps');
+  });
+
   it('handles TDEE fetch error gracefully', async () => {
     // Suppress console.warn for the test
     const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});

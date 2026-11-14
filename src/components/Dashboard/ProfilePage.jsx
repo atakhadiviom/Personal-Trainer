@@ -8,6 +8,13 @@ import WeightProjectionChart from './WeightProjectionChart';
 import BodyProgressCard from './BodyProgressCard';
 import * as googleFit from '../../utils/googleFitService';
 import { isProSubscriber, getSubscriptionDetails, onSubscriptionChange } from '../../utils/subscription';
+import {
+  LOAD_STEP_OPTIONS,
+  describeLoadStep,
+  getLoadStep,
+  onLoadStepChange,
+  setLoadStep
+} from '../../utils/loadSteps';
 
 const ProfilePage = ({ formData, user, resetWizard }) => {
   const currentUser = user || auth.currentUser;
@@ -17,6 +24,7 @@ const ProfilePage = ({ formData, user, resetWizard }) => {
   const [showProModal, setShowProModal] = useState(false);
   const [toast, setToast] = useState(null);
   const [isPro, setIsPro] = useState(isProSubscriber());
+  const [loadStep, setLoadStepState] = useState(() => getLoadStep());
   const [subDetails, setSubDetails] = useState(getSubscriptionDetails());
 
   useEffect(() => {
@@ -38,6 +46,14 @@ const ProfilePage = ({ formData, user, resetWizard }) => {
     });
     return unsub;
   }, []);
+
+  useEffect(() => onLoadStepChange(setLoadStepState), []);
+
+  const handleLoadStep = (option) => {
+    const saved = setLoadStep(option.kg);
+    setLoadStepState(saved);
+    setToast({ message: `Load jumps set to ${option.label} — ${option.detail.toLowerCase()}.`, type: 'success' });
+  };
 
   return (
     <div className="animate-fade-in">
@@ -117,6 +133,37 @@ const ProfilePage = ({ formData, user, resetWizard }) => {
               <div className="profile-stat"><span className="label">Gym</span><span className="value">{formData.gymName || '—'}</span></div>
               <div className="profile-stat"><span className="label">Location</span><span className="value">{formData.gymLocation || '—'}</span></div>
               <div className="profile-stat"><span className="label">TDEE</span><span className="value">{dynamicTDEE ? `${dynamicTDEE} kcal (Dynamic)` : '—'}</span></div>
+            </div>
+          </div>
+
+          {/* Gym Load Setup */}
+          <div style={{ marginTop: '32px' }}>
+            <h4 style={{ marginBottom: '16px', color: 'var(--text-secondary)' }}>Gym Load Setup</h4>
+            <div className="gym-load-card" data-testid="gym-load-card">
+              <p className="gym-load-hint">
+                Every suggested load is rounded to a weight you can actually build. Pick the smallest jump your gym has.
+              </p>
+              <div className="gym-load-chips" role="group" aria-label="Smallest load jump in your gym">
+                {LOAD_STEP_OPTIONS.map(option => {
+                  const active = option.kg === loadStep;
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      className={`gym-load-chip ${active ? 'is-active' : ''}`}
+                      aria-pressed={active}
+                      onClick={() => handleLoadStep(option)}
+                      data-testid={`load-step-${option.id}`}
+                    >
+                      <span className="gym-load-chip-label">{option.label}</span>
+                      <span className="gym-load-chip-title">{option.title}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="gym-load-current" data-testid="load-step-current">
+                Suggestions round to <strong>{describeLoadStep(loadStep)}</strong>.
+              </p>
             </div>
           </div>
 

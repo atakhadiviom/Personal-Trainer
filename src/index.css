@@ -497,12 +497,66 @@ select option { background: var(--bg-warm); }
 }
 .profile-stat .value { font-family: var(--font-body); font-weight: 700; font-size: 1.1rem; }
 
+/* ─── GYM LOAD SETUP ─── */
+.gym-load-card {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 16px;
+}
+.gym-load-hint {
+  margin: 0 0 12px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+.gym-load-chips {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.gym-load-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-secondary);
+  text-align: left;
+  cursor: pointer;
+  transition: color 0.15s var(--ease), border-color 0.15s var(--ease), background 0.15s var(--ease);
+}
+.gym-load-chip:hover { color: var(--text-primary); border-color: var(--text-dim); }
+.gym-load-chip.is-active {
+  border-color: var(--amber);
+  background: var(--amber-glow);
+  color: var(--text-primary);
+}
+.gym-load-chip:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+.gym-load-chip-label { font-family: var(--font-mono); font-size: 0.92rem; font-weight: 700; }
+.gym-load-chip-title { font-family: var(--font-body); font-size: 0.7rem; color: var(--text-dim); }
+.gym-load-chip.is-active .gym-load-chip-title { color: var(--amber); }
+.gym-load-current {
+  margin: 12px 0 0;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+.gym-load-current strong { color: var(--amber); font-family: var(--font-mono); }
+.ws-jump { font-family: var(--font-mono); }
+
 /* ─── RESPONSIVE ─── */
 @media (max-width: 640px) {
   .macro-grid { grid-template-columns: repeat(2, 1fr); }
   .step-title, .super-title { font-size: 1.6rem; }
   .wizard-card { padding: 20px 16px; }
   .profile-stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .gym-load-chips { grid-template-columns: repeat(2, 1fr); }
   .section-header h3 { font-size: 0.9rem; }
   .container { padding: 0 12px; }
   .app-shell { padding: 0 12px; }

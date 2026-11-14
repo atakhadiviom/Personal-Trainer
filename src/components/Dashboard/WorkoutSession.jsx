@@ -22,6 +22,7 @@ import {
   MAX_WEIGHT_KG
 } from '../../utils/workoutSession';
 import { RPE_MIN, RPE_MAX } from '../../utils/autoregulation';
+import { describeLoadStep, getLoadStep, onLoadStepChange } from '../../utils/loadSteps';
 
 const playCue = () => {
   try {
@@ -49,6 +50,7 @@ const WorkoutSession = ({ day, initialSession = null, setLog = {}, onLogSet, onC
   const [weight, setWeight] = useState('');
   const [reps, setReps] = useState('');
   const [rpe, setRpe] = useState('');
+  const [loadStep, setLoadStep] = useState(() => getLoadStep());
   const [restLeft, setRestLeft] = useState(0);
   const [prCount, setPrCount] = useState(0);
   const [showSummary, setShowSummary] = useState(false);
@@ -62,8 +64,11 @@ const WorkoutSession = ({ day, initialSession = null, setLog = {}, onLogSet, onC
   const exercise = currentIndex === -1 ? null : session.exercises[currentIndex];
   const progress = useMemo(() => sessionProgress(session), [session]);
   const totals = useMemo(() => sessionTotals(session), [session]);
-  const defaults = useMemo(() => getSetDefaults(session, setLog), [session, setLog]);
-  const autoPlan = useMemo(() => getAutoRegulatedSet(session), [session]);
+  const defaults = useMemo(
+    () => getSetDefaults(session, setLog, { step: loadStep }),
+    [session, setLog, loadStep]
+  );
+  const autoPlan = useMemo(() => getAutoRegulatedSet(session, { step: loadStep }), [session, loadStep]);
   const resting = restLeft > 0;
 
   // Prefill the next set from the coach's target. Synced during render (the same
@@ -82,6 +87,9 @@ const WorkoutSession = ({ day, initialSession = null, setLog = {}, onLogSet, onC
     if (showSummary || finishedRef.current) return;
     saveActiveSession(session);
   }, [session, showSummary]);
+
+  // A change in Profile (different gym, different plates) applies to the open session.
+  useEffect(() => onLoadStepChange(setLoadStep), []);
 
   // Body scroll lock while the player is open.
   useEffect(() => {
@@ -340,6 +348,9 @@ const WorkoutSession = ({ day, initialSession = null, setLog = {}, onLogSet, onC
                 <span className="ws-chip"><Icon name="dumbbell" /> {exercise.targetSets} × {exercise.reps || '—'}</span>
                 <span className="ws-chip"><Icon name="timer" /> rest {exercise.rest}</span>
                 {exercise.weight && <span className="ws-chip">plan {exercise.weight}</span>}
+                <span className="ws-chip ws-jump" data-testid="ws-jump" title="Smallest jump in your gym">
+                  {describeLoadStep(loadStep)}
+                </span>
               </div>
               {exercise.guide && <p className="ws-guide">{exercise.guide}</p>}
             </div>

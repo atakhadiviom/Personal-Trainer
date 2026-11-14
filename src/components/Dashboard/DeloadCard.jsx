@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Icon from '../Layout/Icon';
 import {
   detectDeloadNeed,
@@ -9,6 +9,7 @@ import {
   MAX_LOAD_RATIO
 } from '../../utils/deloadWeek';
 import { formatKg } from '../../utils/progressiveOverload';
+import { describeLoadStep, getLoadStep, onLoadStepChange } from '../../utils/loadSteps';
 
 const PREVIEW_LIMIT = 6;
 
@@ -32,13 +33,16 @@ const weightLabel = (change) => {
 
 const DeloadCard = ({ setLog = {}, schedule = null, week = 1, today, applied = null, onApply, onRevert }) => {
   const now = useMemo(() => today || new Date(), [today]);
+  const [loadStep, setLoadStep] = useState(() => getLoadStep());
+
+  useEffect(() => onLoadStepChange(setLoadStep), []);
   const detection = useMemo(() => detectDeloadNeed(setLog, { today: now }), [setLog, now]);
 
   const preview = useMemo(
     () => (detection.needed && Array.isArray(schedule) && schedule.length
-      ? buildDeloadSchedule(schedule, setLog, { ratio: DELOAD_LOAD_RATIO })
+      ? buildDeloadSchedule(schedule, setLog, { ratio: DELOAD_LOAD_RATIO, step: loadStep })
       : null),
-    [detection.needed, schedule, setLog]
+    [detection.needed, schedule, setLog, loadStep]
   );
 
   const tone = toneFor(detection, applied);
@@ -55,7 +59,8 @@ const DeloadCard = ({ setLog = {}, schedule = null, week = 1, today, applied = n
           <div>
             <h3 className="dl-title">Auto-Regulated Deload</h3>
             <p className="dl-subtitle">
-              Compares your best estimated 1RM per lift across the last two complete weeks, then rewrites the loads.
+              Compares your best estimated 1RM per lift across the last two complete weeks, then rewrites the loads
+              rounded to {describeLoadStep(loadStep)}.
             </p>
           </div>
         </div>

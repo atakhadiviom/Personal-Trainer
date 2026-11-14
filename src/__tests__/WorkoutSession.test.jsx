@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event';
 import WorkoutSession from '../components/Dashboard/WorkoutSession';
 import { createSession, logSessionSet, ACTIVE_SESSION_KEY } from '../utils/workoutSession';
 import { logSet } from '../utils/progressiveOverload';
+import { toDateKey } from '../utils/streaks';
 
 const DAY = {
   id: 'day2',
@@ -60,6 +61,20 @@ describe('WorkoutSession', () => {
     expect(screen.getByLabelText(/Weight in kg for Lat Pulldown/i)).toHaveValue(40);
     expect(screen.getByLabelText(/Reps for Lat Pulldown/i)).toHaveValue(12);
     expect(screen.getByText(/Drive elbows down/i)).toBeInTheDocument();
+  });
+
+  it('prefills the next load on the gym\'s own jump', () => {
+    localStorage.setItem('novafit_load_step', '5');
+    const date = toDateKey(new Date());
+    setup({
+      setLog: {
+        'lat pulldown': { exercise: 'Lat Pulldown', sets: [{ date, weightKg: 40, reps: 12 }] }
+      }
+    });
+
+    expect(screen.getByTestId('ws-jump')).toHaveTextContent('5 kg jumps');
+    // Top of the 8–12 range at 40 kg → 45 kg on a 5 kg machine stack.
+    expect(screen.getByLabelText(/Weight in kg for Lat Pulldown/i)).toHaveValue(45);
   });
 
   it('logs a set, reports it upward and starts the rest countdown', async () => {

@@ -2,6 +2,7 @@
 // The set log is a map keyed by a normalized exercise name:
 // { 'bench press': { exercise: 'Bench Press', sets: [{ date: 'YYYY-MM-DD', weightKg: 60, reps: 10 }] } }
 import { toDateKey, daysBetween } from './streaks';
+import { roundToStep } from './loadSteps';
 
 export const SET_LOG_KEY = 'novafit_set_log';
 export const MAX_SETS_PER_EXERCISE = 120;
@@ -15,7 +16,8 @@ const MAX_REPS = 100;
 const LB_TO_KG = 0.45359237;
 
 const round1 = (n) => Math.round(n * 10) / 10;
-const roundPlate = (n) => Math.round(n / INCREASE_KG) * INCREASE_KG;
+// Rounds to the athlete's smallest available jump (defaults to a 2.5 kg bar pair).
+export const roundPlate = (n, step = INCREASE_KG) => roundToStep(n, step, 'nearest');
 
 export const formatKg = (kg) => `${round1(kg)} kg`;
 export const formatDelta = (kg) => `${kg > 0 ? '+' : ''}${round1(kg)} kg`;
@@ -259,7 +261,8 @@ export const getWeeklyVolume = (log, { today = new Date() } = {}) => {
 
 // Next-session load target for one exercise.
 // actions: start | increase | hold | reduce | deload | bodyweight
-export const getNextLoadSuggestion = (log, exercise = {}) => {
+// `step` is the athlete's smallest jump in kg, so targets land on buildable weights.
+export const getNextLoadSuggestion = (log, exercise = {}, { step = INCREASE_KG } = {}) => {
   const name = String(exercise.name || '').trim();
   const target = parseRepTarget(exercise.reps);
   const startWeight = parseWeightKg(exercise.weight);
@@ -312,7 +315,7 @@ export const getNextLoadSuggestion = (log, exercise = {}) => {
       - Math.min(...recent.map(s => estimateOneRepMax(s.best.weightKg, s.best.reps) ?? 0)) < 0.5;
 
   if (stagnant) {
-    const deload = roundPlate(Math.max(0, lastWeight * DELOAD_RATIO));
+    const deload = roundPlate(Math.max(0, lastWeight * DELOAD_RATIO), step);
     return {
       action: 'deload',
       weightKg: deload,
@@ -331,7 +334,7 @@ export const getNextLoadSuggestion = (log, exercise = {}) => {
   }
 
   if (lastReps >= target.max) {
-    const next = roundPlate(lastWeight + INCREASE_KG);
+    const next = roundPlate(lastWeight + step, step);
     return {
       action: 'increase',
       weightKg: next,
@@ -350,7 +353,7 @@ export const getNextLoadSuggestion = (log, exercise = {}) => {
   }
 
   if (lastReps < target.min) {
-    const next = roundPlate(Math.max(0, lastWeight - INCREASE_KG));
+    const next = roundPlate(Math.max(0, lastWeight - step), step);
     return {
       action: 'reduce',
       weightKg: next,

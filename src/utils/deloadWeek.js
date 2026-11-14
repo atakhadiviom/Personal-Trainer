@@ -12,6 +12,7 @@ import {
 } from './progressiveOverload';
 import { toDateKey, daysBetween } from './streaks';
 import { startOfWeek, formatShortDate } from './workoutHistory';
+import { roundToStep } from './loadSteps';
 import { getAcuteChronicLoad } from './trainingLoad';
 
 export const DELOAD_LOAD_RATIO = 0.65;
@@ -45,16 +46,14 @@ const addDays = (date, days) => {
   return d;
 };
 
-// Always rounds *down* to the nearest plate so the result is never above the ratio target.
-export const roundToPlate = (kg) => {
-  if (!Number.isFinite(kg) || kg <= 0) return 0;
-  return Math.max(0, Math.floor(kg / INCREASE_KG) * INCREASE_KG);
-};
+// Always rounds *down* to the athlete's smallest jump so the result is never above
+// the ratio target.
+export const roundToPlate = (kg, step = INCREASE_KG) => roundToStep(kg, step, 'down');
 
-export const getDeloadWeightKg = (baseKg, ratio = DELOAD_LOAD_RATIO) => {
+export const getDeloadWeightKg = (baseKg, ratio = DELOAD_LOAD_RATIO, step = INCREASE_KG) => {
   if (!Number.isFinite(baseKg) || baseKg <= 0) return 0;
   const safeRatio = Number.isFinite(ratio) ? Math.min(MAX_LOAD_RATIO, Math.max(MIN_LOAD_RATIO, ratio)) : DELOAD_LOAD_RATIO;
-  return roundToPlate(baseKg * safeRatio);
+  return roundToPlate(baseKg * safeRatio, step);
 };
 
 const weekLabel = (start, end) => `${formatShortDate(start)}–${formatShortDate(end)}`;
@@ -263,7 +262,7 @@ const copySchedule = (schedule) => schedule.map(day => ({
 }));
 
 // Rewrites a week's exercises at the deload ratio. Never mutates the input schedule.
-export const buildDeloadSchedule = (schedule, log = {}, { ratio = DELOAD_LOAD_RATIO } = {}) => {
+export const buildDeloadSchedule = (schedule, log = {}, { ratio = DELOAD_LOAD_RATIO, step = INCREASE_KG } = {}) => {
   const safeRatio = Math.min(MAX_LOAD_RATIO, Math.max(MIN_LOAD_RATIO, Number.isFinite(ratio) ? ratio : DELOAD_LOAD_RATIO));
   if (!Array.isArray(schedule) || !schedule.length) {
     return { schedule: [], changes: [], ratio: safeRatio, totalSetsBefore: 0, totalSetsAfter: 0 };
@@ -307,7 +306,7 @@ export const buildDeloadSchedule = (schedule, log = {}, { ratio = DELOAD_LOAD_RA
         toWeightKg = 0;
         weight = 'BW';
       } else if (baseKg !== null) {
-        toWeightKg = getDeloadWeightKg(baseKg, safeRatio);
+        toWeightKg = getDeloadWeightKg(baseKg, safeRatio, step);
         weight = toWeightKg > 0 ? `${toWeightKg} kg` : 'BW';
       } else {
         weight = 'BW / easy effort';

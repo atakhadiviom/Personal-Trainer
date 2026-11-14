@@ -185,7 +185,8 @@ export const formatSessionDuration = (ms) => {
 
 // Autoregulated target for the next set of the current exercise. Only an RPE on the
 // set just logged moves the load, so sessions logged without effort data behave as before.
-export const getAutoRegulatedSet = (session) => {
+// `step` is the athlete's smallest available jump in kg.
+export const getAutoRegulatedSet = (session, { step } = {}) => {
   const index = currentExerciseIndex(session);
   if (index === -1) return null;
   const exercise = session.exercises[index];
@@ -198,7 +199,8 @@ export const getAutoRegulatedSet = (session) => {
     reps: last.reps,
     rpe: last.rpe,
     repTarget: parseRepTarget(exercise.reps),
-    remainingSets: (exercise.targetSets || 0) - logged.length
+    remainingSets: (exercise.targetSets || 0) - logged.length,
+    step
   });
   if (!plan || plan.action === 'done') return null;
   return plan;
@@ -207,7 +209,7 @@ export const getAutoRegulatedSet = (session) => {
 // Prefill for the next set: coach's progression target first, then this session's
 // last set (autoregulated when its RPE is known), then the athlete's last logged
 // session, then the plan's starting load.
-export const getSetDefaults = (session, setLog = {}) => {
+export const getSetDefaults = (session, setLog = {}, { step } = {}) => {
   const index = currentExerciseIndex(session);
   const exercise = index === -1 ? null : session.exercises[index];
   if (!exercise) return { weight: '', reps: '' };
@@ -215,7 +217,7 @@ export const getSetDefaults = (session, setLog = {}) => {
   // Mid-session: repeat the load the athlete just used for this exercise.
   const lastLogged = exercise.logged?.[exercise.logged.length - 1];
   if (lastLogged) {
-    const auto = getAutoRegulatedSet(session);
+    const auto = getAutoRegulatedSet(session, { step });
     if (auto) {
       return { weight: String(round1(auto.weightKg)), reps: String(auto.reps) };
     }
@@ -223,7 +225,7 @@ export const getSetDefaults = (session, setLog = {}) => {
   }
 
   const repTarget = parseRepTarget(exercise.reps);
-  const suggestion = getNextLoadSuggestion(setLog, exercise);
+  const suggestion = getNextLoadSuggestion(setLog, exercise, { step });
 
   let weight = suggestion?.weightKg;
   if (weight === null || weight === undefined) {

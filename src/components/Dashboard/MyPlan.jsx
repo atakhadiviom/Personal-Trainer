@@ -31,6 +31,7 @@ import { getAIModel } from '../../utils/aiModel';
 import * as googleFit from '../../utils/googleFitService';
 import { getSafeYoutubeUrl } from '../../utils/url';
 import { loadActiveSession, sessionProgress } from '../../utils/workoutSession';
+import { getLoadStep } from '../../utils/loadSteps';
 import {
   buildDeloadSchedule,
   loadDeloadState,
@@ -442,7 +443,7 @@ Return ONLY this JSON (no markdown):
       displayError('This week has no plan to deload yet.');
       return;
     }
-    const result = buildDeloadSchedule(currentSchedule, setLog, { ratio });
+    const result = buildDeloadSchedule(currentSchedule, setLog, { ratio, step: getLoadStep() });
     if (!result.changes.length) {
       displayError('No lifts to adjust this week.');
       return;
