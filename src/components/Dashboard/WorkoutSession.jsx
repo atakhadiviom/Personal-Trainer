@@ -17,12 +17,21 @@ import {
   sessionProgress,
   sessionTotals,
   skipExercise,
+  skipSessionWarmup,
+  toggleSessionWarmup,
   undoLastSet,
   MAX_REPS,
   MAX_WEIGHT_KG
 } from '../../utils/workoutSession';
 import { RPE_MIN, RPE_MAX } from '../../utils/autoregulation';
 import { describeLoadStep, getLoadStep, onLoadStepChange } from '../../utils/loadSteps';
+import {
+  buildWarmupRamp,
+  formatWarmupSet,
+  isWarmupComplete,
+  sanitizeWarmupDone,
+  warmupRampNote
+} from '../../utils/warmupRamp';
 
 const playCue = () => {
   try {
@@ -70,6 +79,20 @@ const WorkoutSession = ({ day, initialSession = null, setLog = {}, onLogSet, onC
   );
   const autoPlan = useMemo(() => getAutoRegulatedSet(session, { step: loadStep }), [session, loadStep]);
   const resting = restLeft > 0;
+
+  // The ramp is derived, never stored: it follows the weight in the box, so an athlete
+  // who changes today's load still warms up to the right percentage, and it disappears
+  // once the first work set is logged.
+  const warmupRamp = useMemo(() => {
+    if (!exercise || exercise.warmupSkipped) return [];
+    if ((exercise.logged?.length || 0) > 0) return [];
+    return buildWarmupRamp(weight, { step: loadStep });
+  }, [exercise, weight, loadStep]);
+  const warmupDone = useMemo(
+    () => sanitizeWarmupDone(exercise?.warmupDone, warmupRamp),
+    [exercise?.warmupDone, warmupRamp]
+  );
+  const warmupFinished = isWarmupComplete(warmupRamp, warmupDone);
 
   // Prefill the next set from the coach's target. Synced during render (the same
   // pattern MyPlan uses for its plan prop) so no cascading effect render is needed.
@@ -202,6 +225,16 @@ const WorkoutSession = ({ day, initialSession = null, setLog = {}, onLogSet, onC
     setSession(next);
     setRestLeft(0);
     if (isSessionComplete(next)) finish(false);
+  };
+
+  const handleWarmupToggle = (id) => {
+    const next = toggleSessionWarmup(session, id, { ramp: warmupRamp });
+    if (next !== session) setSession(next);
+  };
+
+  const handleWarmupSkip = () => {
+    const next = skipSessionWarmup(session);
+    if (next !== session) setSession(next);
   };
 
   const handleUndo = () => {
@@ -371,6 +404,47 @@ const WorkoutSession = ({ day, initialSession = null, setLog = {}, onLogSet, onC
                 set {(exercise.logged?.length || 0) + 1} of {exercise.targetSets}
               </span>
             </div>
+
+            {warmupRamp.length > 0 && (
+              <div
+                className={`ws-warm ${warmupFinished ? 'is-complete' : ''}`}
+                data-testid="ws-warm"
+                role="group"
+                aria-label="Warm-up ramp before the first work set"
+              >
+                <div className="ws-warm-head">
+                  <Icon name="flame" />
+                  <strong>Warm-up ramp</strong>
+                  <span className="ws-warm-count" data-testid="ws-warm-count">
+                    {warmupFinished ? 'ready to work' : `${warmupDone.length} / ${warmupRamp.length} done`}
+                  </span>
+                </div>
+                <p className="ws-warm-note">{warmupRampNote(weight, warmupRamp)}</p>
+                <div className="ws-warm-rungs">
+                  {warmupRamp.map(rung => {
+                    const done = warmupDone.includes(rung.id);
+                    return (
+                      <button
+                        key={rung.id}
+                        type="button"
+                        className={`ws-warm-rung ${done ? 'is-done' : ''}`}
+                        aria-pressed={done}
+                        aria-label={`Warm-up ${formatWarmupSet(rung)}`}
+                        data-testid="ws-warm-rung"
+                        onClick={() => handleWarmupToggle(rung.id)}
+                      >
+                        <span className="ws-warm-set">{formatWarmupSet(rung)}</span>
+                        <span className="ws-warm-tag">{rung.note}</span>
+                        {done && <Icon name="check" />}
+                      </button>
+                    );
+                  })}
+                </div>
+                <button type="button" className="ws-warm-skip" onClick={handleWarmupSkip}>
+                  No warm-up today
+                </button>
+              </div>
+            )}
 
             {autoPlan && (
               <div className={`ws-auto is-${autoPlan.action}`} data-testid="ws-auto" role="status">

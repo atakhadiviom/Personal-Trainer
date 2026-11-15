@@ -14,6 +14,7 @@
 
 import { parseRepTarget, parseWeightKg, getNextLoadSuggestion, getLastSessionSets } from './progressiveOverload';
 import { suggestNextSet, parseRpe } from './autoregulation';
+import { toggleWarmupRung, warmupRungIds } from './warmupRamp';
 
 export const ACTIVE_SESSION_KEY = 'novafit_active_session';
 export const SESSION_MAX_AGE_MS = 12 * 60 * 60 * 1000;
@@ -48,7 +49,10 @@ const normalizeExercise = (exercise = {}) => {
     weight: exercise.weight ?? '',
     guide: exercise.guide ?? '',
     skipped: false,
-    logged: []
+    logged: [],
+    // Warm-up ramp ticks live on the exercise so a phone lock mid-ramp keeps them.
+    warmupDone: [],
+    warmupSkipped: false
   };
 };
 
@@ -149,6 +153,34 @@ export const undoLastSet = (session) => {
     }
   }
   return session;
+};
+
+// Warm-up ticks: the ramp is rebuilt from the working weight every render, so ticks
+// are validated against it before they are stored.
+export const toggleSessionWarmup = (session, id, { ramp = [] } = {}) => {
+  const index = currentExerciseIndex(session);
+  if (index === -1) return session;
+  if (!warmupRungIds(ramp).includes(id)) return session;
+  const exercise = session.exercises[index];
+  const warmupDone = toggleWarmupRung(exercise.warmupDone, id, ramp);
+  return {
+    ...session,
+    exercises: session.exercises.map((ex, i) => (
+      i === index ? { ...ex, warmupDone, warmupSkipped: false } : ex
+    ))
+  };
+};
+
+// The athlete knows their body: give them a one-tap way past the ramp.
+export const skipSessionWarmup = (session) => {
+  const index = currentExerciseIndex(session);
+  if (index === -1) return session;
+  return {
+    ...session,
+    exercises: session.exercises.map((ex, i) => (
+      i === index ? { ...ex, warmupSkipped: true } : ex
+    ))
+  };
 };
 
 export const sessionTotals = (session) => {
@@ -287,7 +319,11 @@ export const restoreSession = (raw, { now = Date.now(), maxAgeMs = SESSION_MAX_A
       skipped: !!ex.skipped,
       logged: Array.isArray(ex.logged)
         ? ex.logged.map(set => cleanSet(set)).filter(Boolean).slice(0, MAX_SETS + 2)
-        : []
+        : [],
+      warmupDone: Array.isArray(ex.warmupDone)
+        ? [...new Set(ex.warmupDone.filter(id => typeof id === 'string'))].slice(0, 6)
+        : [],
+      warmupSkipped: !!ex.warmupSkipped
     }))
   };
 };

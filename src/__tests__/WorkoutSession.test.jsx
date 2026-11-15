@@ -3,7 +3,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import WorkoutSession from '../components/Dashboard/WorkoutSession';
-import { createSession, logSessionSet, ACTIVE_SESSION_KEY } from '../utils/workoutSession';
+import { createSession, logSessionSet, loadActiveSession, ACTIVE_SESSION_KEY } from '../utils/workoutSession';
 import { logSet } from '../utils/progressiveOverload';
 import { toDateKey } from '../utils/streaks';
 
@@ -249,5 +249,124 @@ describe('WorkoutSession', () => {
     expect(chip).toHaveAttribute('aria-pressed', 'true');
     await user.click(chip);
     expect(chip).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('ramps the working weight before the first set', () => {
+    setup();
+
+    const card = screen.getByTestId('ws-warm');
+    expect(card).toHaveTextContent('Warm-up ramp');
+    expect(screen.getByTestId('ws-warm-count')).toHaveTextContent('0 / 3 done');
+
+    // 40 kg on a 2.5 kg bar: 50 % → 20, 70 % → 27.5, 85 % → 32.5, rounded down.
+    const rungs = screen.getAllByTestId('ws-warm-rung');
+    expect(rungs).toHaveLength(3);
+    expect(rungs[0]).toHaveTextContent('20 kg × 5');
+    expect(rungs[1]).toHaveTextContent('27.5 kg × 3');
+    expect(rungs[2]).toHaveTextContent('32.5 kg × 2');
+    expect(rungs[0]).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('ticks ramp sets and keeps them across a session restore', async () => {
+    const user = userEvent.setup();
+    const { unmount } = setup();
+
+    await user.click(screen.getByRole('button', { name: /Warm-up 20 kg × 5/i }));
+    expect(screen.getByTestId('ws-warm-count')).toHaveTextContent('1 / 3 done');
+    expect(screen.getByRole('button', { name: /Warm-up 20 kg × 5/i })).toHaveAttribute('aria-pressed', 'true');
+
+    const stored = JSON.parse(localStorage.getItem(ACTIVE_SESSION_KEY));
+    expect(stored.exercises[0].warmupDone).toEqual(['ramp50']);
+
+    unmount();
+    const restored = loadActiveSession();
+    setup({ day: null, initialSession: restored });
+    expect(screen.getByRole('button', { name: /Warm-up 20 kg × 5/i })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('ws-warm-count')).toHaveTextContent('1 / 3 done');
+  });
+
+  it('marks the ramp ready to work once every rung is ticked', async () => {
+    const user = userEvent.setup();
+    setup();
+
+    await user.click(screen.getByRole('button', { name: /Warm-up 20 kg × 5/i }));
+    await user.click(screen.getByRole('button', { name: /Warm-up 27.5 kg × 3/i }));
+    await user.click(screen.getByRole('button', { name: /Warm-up 32.5 kg × 2/i }));
+
+    expect(screen.getByTestId('ws-warm-count')).toHaveTextContent('ready to work');
+    expect(screen.getByTestId('ws-warm')).toHaveClass('is-complete');
+  });
+
+  it('drops the ramp once the first work set is logged', async () => {
+    const user = userEvent.setup();
+    setup();
+
+    expect(screen.getByTestId('ws-warm')).toBeInTheDocument();
+    await logSetViaForm(user, { weight: 40, reps: 10 });
+    expect(screen.queryByTestId('ws-warm')).not.toBeInTheDocument();
+  });
+
+  it('lets the athlete skip the ramp', async () => {
+    const user = userEvent.setup();
+    setup();
+
+    await user.click(screen.getByRole('button', { name: /No warm-up today/i }));
+    expect(screen.queryByTestId('ws-warm')).not.toBeInTheDocument();
+  });
+
+  it('rebuilds the ramp for the next exercise\'s own weight', async () => {
+    const user = userEvent.setup();
+    setup();
+
+    await logSetViaForm(user, { weight: 40, reps: 10 });
+    await logSetViaForm(user, { weight: 40, reps: 10 });
+
+    expect(screen.getByTestId('ws-exercise-name')).toHaveTextContent('Cable Row');
+    const rungs = screen.getAllByTestId('ws-warm-rung');
+    // 30 kg on a 2.5 kg bar: 15, 20, 25.
+    expect(rungs[0]).toHaveTextContent('15 kg × 5');
+    expect(rungs[1]).toHaveTextContent('20 kg × 3');
+    expect(rungs[2]).toHaveTextContent('25 kg × 2');
+    expect(screen.getByTestId('ws-warm-count')).toHaveTextContent('0 / 3 done');
+  });
+
+  it('follows the gym jump set in the profile', () => {
+    localStorage.setItem('novafit_load_step', '5');
+    setup();
+
+    const rungs = screen.getAllByTestId('ws-warm-rung');
+    expect(rungs.map(rung => rung.textContent)).toEqual([
+      expect.stringContaining('20 kg × 5'),
+      expect.stringContaining('25 kg × 3'),
+      expect.stringContaining('30 kg × 2')
+    ]);
+  });
+
+  it('follows the weight the athlete is about to lift', async () => {
+    const user = userEvent.setup();
+    setup();
+
+    const field = screen.getByLabelText(/Weight in kg for Lat Pulldown/i);
+    await user.clear(field);
+    await user.type(field, '60');
+
+    const rungs = screen.getAllByTestId('ws-warm-rung');
+    expect(rungs[0]).toHaveTextContent('30 kg × 5');
+    expect(rungs[1]).toHaveTextContent('40 kg × 3');
+    expect(rungs[2]).toHaveTextContent('50 kg × 2');
+    expect(screen.getByTestId('ws-warm')).toHaveTextContent('Ramp to 60 kg');
+  });
+
+  it('shows no ramp for bodyweight work or a weight too light to build one', () => {
+    const { unmount } = setup({
+      day: { id: 'day3', label: 'Bodyweight', exercises: [{ name: 'Push-up', sets: 3, reps: '10-15' }] }
+    });
+    expect(screen.queryByTestId('ws-warm')).not.toBeInTheDocument();
+    unmount();
+
+    setup({
+      day: { id: 'day4', label: 'Arms', exercises: [{ name: 'Curl', sets: 3, reps: '12-15', weight: '5kg' }] }
+    });
+    expect(screen.queryByTestId('ws-warm')).not.toBeInTheDocument();
   });
 });
