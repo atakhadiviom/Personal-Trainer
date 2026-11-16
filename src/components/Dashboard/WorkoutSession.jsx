@@ -32,6 +32,7 @@ import {
   sanitizeWarmupDone,
   warmupRampNote
 } from '../../utils/warmupRamp';
+import PlateMath from './PlateMath';
 
 const playCue = () => {
   try {
@@ -494,6 +495,8 @@ const WorkoutSession = ({ day, initialSession = null, setLog = {}, onLogSet, onC
                 <Icon name="check" /> Log set
               </button>
             </form>
+
+            <PlateMath exerciseName={exercise.name} weightKg={weight} />
 
             <div className="ws-rpe" role="group" aria-label="Effort for this set (RPE, optional)">
               <span className="ws-rpe-label">

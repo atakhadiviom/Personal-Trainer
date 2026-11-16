@@ -15,6 +15,7 @@ import {
   onLoadStepChange,
   setLoadStep
 } from '../../utils/loadSteps';
+import { BAR_OPTIONS, getBarWeight, onBarWeightChange, setBarWeight } from '../../utils/plateMath';
 
 const ProfilePage = ({ formData, user, resetWizard }) => {
   const currentUser = user || auth.currentUser;
@@ -25,6 +26,7 @@ const ProfilePage = ({ formData, user, resetWizard }) => {
   const [toast, setToast] = useState(null);
   const [isPro, setIsPro] = useState(isProSubscriber());
   const [loadStep, setLoadStepState] = useState(() => getLoadStep());
+  const [barKg, setBarKgState] = useState(() => getBarWeight());
   const [subDetails, setSubDetails] = useState(getSubscriptionDetails());
 
   useEffect(() => {
@@ -48,11 +50,18 @@ const ProfilePage = ({ formData, user, resetWizard }) => {
   }, []);
 
   useEffect(() => onLoadStepChange(setLoadStepState), []);
+  useEffect(() => onBarWeightChange(setBarKgState), []);
 
   const handleLoadStep = (option) => {
     const saved = setLoadStep(option.kg);
     setLoadStepState(saved);
     setToast({ message: `Load jumps set to ${option.label} — ${option.detail.toLowerCase()}.`, type: 'success' });
+  };
+
+  const handleBar = (option) => {
+    const saved = setBarWeight(option.kg);
+    setBarKgState(saved);
+    setToast({ message: `Bar set to ${option.label} — ${option.title.toLowerCase()}.`, type: 'success' });
   };
 
   return (
@@ -163,6 +172,37 @@ const ProfilePage = ({ formData, user, resetWizard }) => {
               </div>
               <p className="gym-load-current" data-testid="load-step-current">
                 Suggestions round to <strong>{describeLoadStep(loadStep)}</strong>.
+              </p>
+            </div>
+          </div>
+
+          {/* Barbell Setup */}
+          <div style={{ marginTop: '32px' }}>
+            <h4 style={{ marginBottom: '16px', color: 'var(--text-secondary)' }}>Barbell</h4>
+            <div className="gym-load-card" data-testid="bar-weight-card">
+              <p className="gym-load-hint">
+                The guided session shows which plates go on each side. Pick the bar you actually lift with.
+              </p>
+              <div className="gym-load-chips" role="group" aria-label="Bar weight">
+                {BAR_OPTIONS.map(option => {
+                  const active = option.kg === barKg;
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      className={`gym-load-chip ${active ? 'is-active' : ''}`}
+                      aria-pressed={active}
+                      onClick={() => handleBar(option)}
+                      data-testid={`bar-weight-${option.id}`}
+                    >
+                      <span className="gym-load-chip-label">{option.label}</span>
+                      <span className="gym-load-chip-title">{option.title}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="gym-load-current" data-testid="bar-weight-current">
+                Plate maths on a <strong>{barKg} kg</strong> bar.
               </p>
             </div>
           </div>

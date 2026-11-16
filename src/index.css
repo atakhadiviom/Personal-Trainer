@@ -74,6 +74,18 @@ h1, h2, h3, h4, h5 { font-family: var(--font-display); font-weight: 700; line-he
   border-radius: var(--r-xl);
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* ─── FORMS ─── */
 input, textarea, select {
   width: 100%;
@@ -3663,6 +3675,139 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); box-sh
 }
 
 .ws-warm-skip:hover { color: var(--text-primary); }
+
+/* ─── PLATE MATH ─── */
+.ws-plates {
+  margin-top: 12px;
+  padding: 11px 12px 10px;
+  border-radius: var(--r-md);
+  border: 1px solid rgba(103, 232, 249, 0.24);
+  background: rgba(103, 232, 249, 0.06);
+}
+
+.ws-plates-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.74rem;
+  color: var(--text-primary);
+}
+
+.ws-plates-head .ui-icon { width: 13px; height: 13px; color: var(--ice); }
+
+.ws-plates-bar-wrap {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.ws-plates-bar-label {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+}
+
+.ws-plates-bar {
+  width: auto;
+  padding: 3px 6px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+}
+
+.ws-plates-bar:focus-visible {
+  outline: none;
+  border-color: var(--ice);
+  box-shadow: 0 0 0 3px rgba(103, 232, 249, 0.15);
+}
+
+.ws-plates-body {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.ws-plates-rack {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  min-height: 48px;
+  padding: 6px 8px;
+  border-radius: var(--r-sm);
+  background: rgba(0, 0, 0, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.ws-plate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  font-weight: 700;
+}
+
+.ws-plate.is-bar {
+  width: 34px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #64748b, #cbd5e1 55%, #64748b);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.ws-plate[data-kg="25"] { background: #b91c1c; border-color: #f87171; }
+.ws-plate[data-kg="20"] { background: #1d4ed8; border-color: #60a5fa; }
+.ws-plate[data-kg="15"] { background: #ca8a04; border-color: #facc15; color: #111827; }
+.ws-plate[data-kg="10"] { background: #15803d; border-color: #4ade80; }
+.ws-plate[data-kg="5"] { background: #e2e8f0; border-color: #f8fafc; color: #0f172a; }
+.ws-plate[data-kg="2.5"] { background: #0f172a; border-color: #94a3b8; }
+.ws-plate[data-kg="1.25"] { background: #94a3b8; border-color: #e2e8f0; color: #0f172a; }
+
+.ws-plates-empty {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  color: var(--text-dim);
+  padding-bottom: 4px;
+}
+
+.ws-plates-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ws-plates-total {
+  font-family: var(--font-mono);
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.ws-plates-side {
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--text-secondary);
+}
+
+.ws-plates-advice {
+  margin: 8px 0 0;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: var(--text-dim);
+}
+
+.ws-plates-advice.is-warn { color: #fbbf24; }
 
 .ws-auto {
   margin-top: 14px;

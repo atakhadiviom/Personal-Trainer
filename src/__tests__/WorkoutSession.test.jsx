@@ -357,8 +357,7 @@ describe('WorkoutSession', () => {
     expect(screen.getByTestId('ws-warm')).toHaveTextContent('Ramp to 60 kg');
   });
 
-  it('shows no ramp for bodyweight work or a weight too light to build one', () => {
-    const { unmount } = setup({
+  it('shows no ramp for bodyweight work or a weight too light to build one', () => {    const { unmount } = setup({
       day: { id: 'day3', label: 'Bodyweight', exercises: [{ name: 'Push-up', sets: 3, reps: '10-15' }] }
     });
     expect(screen.queryByTestId('ws-warm')).not.toBeInTheDocument();
@@ -368,5 +367,29 @@ describe('WorkoutSession', () => {
       day: { id: 'day4', label: 'Arms', exercises: [{ name: 'Curl', sets: 3, reps: '12-15', weight: '5kg' }] }
     });
     expect(screen.queryByTestId('ws-warm')).not.toBeInTheDocument();
+  });
+
+  it('shows the plates to load on a barbell lift and follows the typed weight', async () => {
+    const user = userEvent.setup();
+    setup({
+      day: {
+        id: 'day5',
+        label: 'Barbell Strength',
+        exercises: [{ name: 'Barbell Bench Press', sets: 3, reps: '5', rest: '150s', weight: '100kg' }]
+      }
+    });
+
+    expect(screen.getByTestId('ws-plates-advice')).toHaveTextContent('25 + 15 per side on a 20 kg bar → 100 kg.');
+
+    const field = screen.getByLabelText(/Weight in kg for Barbell Bench Press/i);
+    await user.clear(field);
+    await user.type(field, '87.5');
+
+    expect(screen.getByTestId('ws-plates-advice')).toHaveTextContent('25 + 5 + 2.5 + 1.25 per side on a 20 kg bar');
+  });
+
+  it('offers no plate maths on cable work', () => {
+    setup();
+    expect(screen.queryByTestId('ws-plates')).not.toBeInTheDocument();
   });
 });

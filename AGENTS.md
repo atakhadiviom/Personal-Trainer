@@ -39,6 +39,7 @@ NovaFit AI: 12-week gym trainer web app with DeepSeek AI workout/nutrition gener
 17. [x] **Intra-Session Autoregulation**: optional RPE (6–10) on each logged set plus a next-set engine that adds, holds or drops plates from reps hit and reps in reserve, previews the adjusted load and rep target in the guided player, and survives a session restore.
 18. [x] **Gym Load Steps**: one Profile setting for the smallest jump in the athlete's gym (1.25 kg fractional plates, 2 kg dumbbells, 2.5 kg standard bar, 5 kg machine stack) that rounds every next-set, next-session and deload target to a buildable weight — applied live inside an open session.
 19. [x] **Warm-Up Ramp**: every exercise's first work set is preceded by a coached ramp (50 % × 5, 70 % × 3, 85 % × 2) derived from the weight in the box, rounded down to the athlete's own jump, tickable set by set, persisted with the active session, and skippable in one tap.
+20. [x] **Plate Math**: the guided session turns the load in the kg box into the exact plates per side on the athlete's own bar (20/15/10/7 kg or plate-loaded with no bar), flags weights that are not buildable and offers the two nearest buildable loads, and hides entirely on cable, dumbbell, machine and bodyweight work.
 
 ## OpenBot Automated Schedule
 - Scheduled Routine: `NovaFit Autonomous Startup Lead` runs daily at 09:00 (Asia/Muscat).

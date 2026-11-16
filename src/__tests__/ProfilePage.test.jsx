@@ -135,6 +135,21 @@ describe('ProfilePage', () => {
     expect(screen.getByTestId('load-step-current')).toHaveTextContent('5 kg jumps');
   });
 
+  it('lets the athlete pick their bar weight', () => {
+    localStorage.clear();
+    render(<ProfilePage formData={defaultFormData} resetWizard={vi.fn()} />);
+
+    expect(screen.getByTestId('bar-weight-olympic')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('bar-weight-current')).toHaveTextContent('20 kg');
+
+    fireEvent.click(screen.getByTestId('bar-weight-womens'));
+
+    expect(screen.getByTestId('bar-weight-womens')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('bar-weight-olympic')).toHaveAttribute('aria-pressed', 'false');
+    expect(localStorage.getItem('novafit_bar_kg')).toBe('15');
+    expect(screen.getByTestId('bar-weight-current')).toHaveTextContent('15 kg');
+  });
+
   it('handles TDEE fetch error gracefully', async () => {
     // Suppress console.warn for the test
     const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
