@@ -314,6 +314,75 @@ describe('WorkoutSession', () => {
     expect(screen.queryByTestId('ws-warm')).not.toBeInTheDocument();
   });
 
+  it('switches a lift to a single primer and remembers the choice', async () => {
+    const user = userEvent.setup();
+    const { unmount } = setup();
+
+    expect(screen.getByRole('button', { name: 'Full ramp' })).toHaveAttribute('aria-pressed', 'true');
+    await user.click(screen.getByRole('button', { name: '1 primer' }));
+
+    const rungs = screen.getAllByTestId('ws-warm-rung');
+    expect(rungs).toHaveLength(1);
+    expect(rungs[0]).toHaveTextContent('32.5 kg × 2');
+    expect(screen.getByTestId('ws-warm-count')).toHaveTextContent('0 / 1 done');
+    expect(screen.getByTestId('ws-warm')).toHaveTextContent('Warm-up primer');
+    expect(JSON.parse(localStorage.getItem('novafit_warmup_modes'))).toEqual({ 'lat pulldown': 'primer' });
+
+    // A fresh player on the same device opens the lift with the primer already set.
+    unmount();
+    setup();
+    expect(screen.getByRole('button', { name: '1 primer' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getAllByTestId('ws-warm-rung')).toHaveLength(1);
+  });
+
+  it('keeps warm-up volume per exercise, not per session', async () => {
+    const user = userEvent.setup();
+    setup();
+
+    await user.click(screen.getByRole('button', { name: '1 primer' }));
+    await logSetViaForm(user, { weight: 40, reps: 10 });
+    await logSetViaForm(user, { weight: 40, reps: 10 });
+
+    expect(screen.getByTestId('ws-exercise-name')).toHaveTextContent('Cable Row');
+    expect(screen.getByRole('button', { name: 'Full ramp' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getAllByTestId('ws-warm-rung')).toHaveLength(3);
+    expect(JSON.parse(localStorage.getItem('novafit_warmup_modes'))).toEqual({ 'lat pulldown': 'primer' });
+  });
+
+  it('turns warm-up off for one lift and back on', async () => {
+    const user = userEvent.setup();
+    setup();
+
+    await user.click(screen.getByRole('button', { name: 'Off' }));
+    expect(screen.queryByTestId('ws-warm')).not.toBeInTheDocument();
+    expect(screen.getByTestId('ws-warm-status')).toHaveTextContent('Off for this exercise');
+    expect(screen.getByRole('button', { name: 'Off' })).toHaveAttribute('aria-pressed', 'true');
+
+    await user.click(screen.getByRole('button', { name: 'Full ramp' }));
+    expect(screen.getByTestId('ws-warm')).toBeInTheDocument();
+    expect(screen.getAllByTestId('ws-warm-rung')).toHaveLength(3);
+    expect(screen.queryByTestId('ws-warm-status')).not.toBeInTheDocument();
+  });
+
+  it('brings the ramp back after a one-off skip', async () => {
+    const user = userEvent.setup();
+    setup();
+
+    await user.click(screen.getByRole('button', { name: /No warm-up today/i }));
+    expect(screen.getByTestId('ws-warm-status')).toHaveTextContent('Skipped today');
+
+    await user.click(screen.getByRole('button', { name: 'Full ramp' }));
+    expect(screen.getByTestId('ws-warm')).toBeInTheDocument();
+    expect(screen.getAllByTestId('ws-warm-rung')).toHaveLength(3);
+  });
+
+  it('shows no warm-up switch on bodyweight work', () => {
+    setup({
+      day: { id: 'day3', label: 'Bodyweight', exercises: [{ name: 'Push-up', sets: 3, reps: '10-15' }] }
+    });
+    expect(screen.queryByTestId('ws-warm-modes')).not.toBeInTheDocument();
+  });
+
   it('rebuilds the ramp for the next exercise\'s own weight', async () => {
     const user = userEvent.setup();
     setup();

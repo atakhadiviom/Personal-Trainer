@@ -18,6 +18,7 @@ import {
   sessionTotals,
   skipExercise,
   skipSessionWarmup,
+  restoreSessionWarmup,
   toggleSessionWarmup,
   undoLastSet,
   MAX_REPS,
@@ -26,12 +27,15 @@ import {
 import { RPE_MIN, RPE_MAX } from '../../utils/autoregulation';
 import { describeLoadStep, getLoadStep, onLoadStepChange } from '../../utils/loadSteps';
 import {
+  WARMUP_MODES,
   buildWarmupRamp,
   formatWarmupSet,
   isWarmupComplete,
+  parseWarmupMode,
   sanitizeWarmupDone,
   warmupRampNote
 } from '../../utils/warmupRamp';
+import { getWarmupMode, setWarmupMode } from '../../utils/warmupPrefs';
 import PlateMath from './PlateMath';
 
 const playCue = () => {
@@ -72,6 +76,15 @@ const WorkoutSession = ({ day, initialSession = null, setLog = {}, onLogSet, onC
 
   const currentIndex = currentExerciseIndex(session);
   const exercise = currentIndex === -1 ? null : session.exercises[currentIndex];
+  // Warm-up volume belongs to the exercise, not the session: it is read from the device
+  // and synced during render when the player moves to the next lift.
+  const warmupNameKey = exercise?.name ?? '';
+  const [warmupMode, setWarmupModeState] = useState(() => getWarmupMode(warmupNameKey));
+  const [appliedWarmupKey, setAppliedWarmupKey] = useState(warmupNameKey);
+  if (appliedWarmupKey !== warmupNameKey) {
+    setAppliedWarmupKey(warmupNameKey);
+    setWarmupModeState(getWarmupMode(warmupNameKey));
+  }
   const progress = useMemo(() => sessionProgress(session), [session]);
   const totals = useMemo(() => sessionTotals(session), [session]);
   const defaults = useMemo(
@@ -83,17 +96,23 @@ const WorkoutSession = ({ day, initialSession = null, setLog = {}, onLogSet, onC
 
   // The ramp is derived, never stored: it follows the weight in the box, so an athlete
   // who changes today's load still warms up to the right percentage, and it disappears
-  // once the first work set is logged.
+  // once the first work set is logged. The chosen volume decides how many rungs exist.
   const warmupRamp = useMemo(() => {
     if (!exercise || exercise.warmupSkipped) return [];
     if ((exercise.logged?.length || 0) > 0) return [];
-    return buildWarmupRamp(weight, { step: loadStep });
-  }, [exercise, weight, loadStep]);
+    return buildWarmupRamp(weight, { step: loadStep, mode: warmupMode });
+  }, [exercise, weight, loadStep, warmupMode]);
   const warmupDone = useMemo(
     () => sanitizeWarmupDone(exercise?.warmupDone, warmupRamp),
     [exercise?.warmupDone, warmupRamp]
   );
   const warmupFinished = isWarmupComplete(warmupRamp, warmupDone);
+  // The mode switch stays reachable after a skip or with warm-up turned off; a lift with
+  // no buildable warm-up at all keeps the player clean.
+  const showWarmupMode = !exercise
+    ? false
+    : warmupRamp.length > 0 || warmupMode !== 'full' || !!exercise.warmupSkipped;
+  const warmupOff = parseWarmupMode(warmupMode) === 'off';
 
   // Prefill the next set from the coach's target. Synced during render (the same
   // pattern MyPlan uses for its plan prop) so no cascading effect render is needed.
@@ -235,6 +254,14 @@ const WorkoutSession = ({ day, initialSession = null, setLog = {}, onLogSet, onC
 
   const handleWarmupSkip = () => {
     const next = skipSessionWarmup(session);
+    if (next !== session) setSession(next);
+  };
+
+  const handleWarmupMode = (mode) => {
+    if (!exercise) return;
+    setWarmupModeState(setWarmupMode(exercise.name, mode));
+    // Picking a mode after a one-off skip brings the ramp back for this exercise.
+    const next = restoreSessionWarmup(session);
     if (next !== session) setSession(next);
   };
 
@@ -406,6 +433,45 @@ const WorkoutSession = ({ day, initialSession = null, setLog = {}, onLogSet, onC
               </span>
             </div>
 
+            {showWarmupMode && (
+              <div className="ws-warm-modes" data-testid="ws-warm-modes">
+                <div className="ws-warm-modes-row">
+                  <span className="ws-warm-modes-label"><Icon name="flame" /> Warm-up</span>
+                  <div
+                    className="ws-warm-mode-chips"
+                    role="group"
+                    aria-label={`Warm-up volume for ${exercise.name}`}
+                  >
+                    {WARMUP_MODES.map(mode => {
+                      const active = warmupMode === mode.id;
+                      return (
+                        <button
+                          key={mode.id}
+                          type="button"
+                          className={`ws-warm-mode ${active ? 'is-active' : ''}`}
+                          aria-pressed={active}
+                          title={mode.detail}
+                          onClick={() => handleWarmupMode(mode.id)}
+                        >
+                          {mode.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <span className="ws-warm-saved" title="Saved for this exercise on this device">
+                    saved
+                  </span>
+                </div>
+                {(warmupOff || exercise.warmupSkipped) && (
+                  <p className="ws-warm-status" data-testid="ws-warm-status">
+                    {warmupOff
+                      ? 'Off for this exercise — work sets start cold.'
+                      : 'Skipped today — pick a mode to bring it back.'}
+                  </p>
+                )}
+              </div>
+            )}
+
             {warmupRamp.length > 0 && (
               <div
                 className={`ws-warm ${warmupFinished ? 'is-complete' : ''}`}
@@ -415,12 +481,12 @@ const WorkoutSession = ({ day, initialSession = null, setLog = {}, onLogSet, onC
               >
                 <div className="ws-warm-head">
                   <Icon name="flame" />
-                  <strong>Warm-up ramp</strong>
+                  <strong>{warmupMode === 'primer' ? 'Warm-up primer' : 'Warm-up ramp'}</strong>
                   <span className="ws-warm-count" data-testid="ws-warm-count">
                     {warmupFinished ? 'ready to work' : `${warmupDone.length} / ${warmupRamp.length} done`}
                   </span>
                 </div>
-                <p className="ws-warm-note">{warmupRampNote(weight, warmupRamp)}</p>
+                <p className="ws-warm-note">{warmupRampNote(weight, warmupRamp, warmupMode)}</p>
                 <div className="ws-warm-rungs">
                   {warmupRamp.map(rung => {
                     const done = warmupDone.includes(rung.id);

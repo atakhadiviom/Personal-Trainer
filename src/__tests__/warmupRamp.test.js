@@ -1,11 +1,16 @@
 import { describe, it, expect } from 'vitest';
 import {
+  DEFAULT_WARMUP_MODE,
+  PRIMER_RUNG,
+  WARMUP_MODES,
   WARMUP_RUNGS,
   buildWarmupRamp,
   describeWarmupRamp,
   formatWarmupSet,
+  hasWarmupLoad,
   isWarmupComplete,
   nextWarmupSet,
+  parseWarmupMode,
   sanitizeWarmupDone,
   toggleWarmupRung,
   warmupRampNote,
@@ -13,6 +18,7 @@ import {
 } from '../utils/warmupRamp';
 import {
   createSession,
+  restoreSessionWarmup,
   skipSessionWarmup,
   toggleSessionWarmup
 } from '../utils/workoutSession';
@@ -114,6 +120,70 @@ describe('warm-up ticks', () => {
   });
 });
 
+describe('warm-up volume modes', () => {
+  it('defaults to the full three-rung ramp', () => {
+    expect(DEFAULT_WARMUP_MODE).toBe('full');
+    expect(WARMUP_MODES.map(mode => mode.id)).toEqual(['full', 'primer', 'off']);
+    expect(buildWarmupRamp(40, { step: 2.5 })).toHaveLength(3);
+    expect(buildWarmupRamp(40, { step: 2.5, mode: 'full' })).toHaveLength(3);
+  });
+
+  it('gives one heavy double in primer mode', () => {
+    const ramp = buildWarmupRamp(40, { step: 2.5, mode: 'primer' });
+    expect(ramp).toHaveLength(1);
+    expect(ramp[0]).toMatchObject({
+      id: PRIMER_RUNG.id,
+      weightKg: 32.5,
+      reps: 2,
+      percent: 0.85
+    });
+    // A primer is a single deliberate set, not a ramp that failed to build.
+    expect(warmupRungIds(ramp)).toEqual(['primer85']);
+  });
+
+  it('rounds the primer down to the athlete\'s jump', () => {
+    expect(weights(buildWarmupRamp(100, { step: 5, mode: 'primer' }))).toEqual([85]);
+    expect(weights(buildWarmupRamp(37.5, { step: 2.5, mode: 'primer' }))).toEqual([30]);
+  });
+
+  it('drops every rung in off mode', () => {
+    expect(buildWarmupRamp(40, { step: 2.5, mode: 'off' })).toEqual([]);
+    expect(buildWarmupRamp(100, { step: 5, mode: 'off' })).toEqual([]);
+  });
+
+  it('treats an unknown mode as the full ramp', () => {
+    expect(parseWarmupMode('primer')).toBe('primer');
+    expect(parseWarmupMode('off')).toBe('off');
+    expect(parseWarmupMode('nope')).toBe('full');
+    expect(parseWarmupMode(null)).toBe('full');
+    expect(buildWarmupRamp(40, { step: 2.5, mode: 'nope' })).toHaveLength(3);
+  });
+
+  it('has no primer when the load cannot carry one', () => {
+    // 85 % of 5 kg rounds down to a 2.5 kg primer — half the work weight, not a primer.
+    expect(buildWarmupRamp(5, { step: 2.5, mode: 'primer' })).toEqual([]);
+    expect(buildWarmupRamp('', { step: 2.5, mode: 'primer' })).toEqual([]);
+    expect(buildWarmupRamp(0, { mode: 'primer' })).toEqual([]);
+    // 7.5 kg rounds to a genuine 5 kg double.
+    expect(weights(buildWarmupRamp(7.5, { step: 2.5, mode: 'primer' }))).toEqual([5]);
+  });
+
+  it('knows whether a load can be warmed up at all', () => {
+    expect(hasWarmupLoad(40, { step: 2.5 })).toBe(true);
+    expect(hasWarmupLoad(5, { step: 2.5 })).toBe(true);
+    expect(hasWarmupLoad(2.5, { step: 2.5 })).toBe(false);
+    expect(hasWarmupLoad('BW', { step: 2.5 })).toBe(false);
+    expect(hasWarmupLoad(900, { step: 2.5 })).toBe(false);
+  });
+
+  it('writes a primer-specific note', () => {
+    const primer = buildWarmupRamp(40, { step: 2.5, mode: 'primer' });
+    expect(warmupRampNote(40, primer, 'primer')).toContain('One heavy double');
+    expect(warmupRampNote(40, primer, 'primer')).toContain('32.5 kg × 2');
+    expect(warmupRampNote(40, primer)).toContain('Ramp to 40 kg');
+  });
+});
+
 describe('session warm-up state', () => {
   const session = createSession({
     id: 'day1',
@@ -147,5 +217,13 @@ describe('session warm-up state', () => {
     const ticked = toggleSessionWarmup(skipped, 'ramp70', { ramp });
     expect(ticked.exercises[0].warmupSkipped).toBe(false);
     expect(ticked.exercises[0].warmupDone).toEqual(['ramp70']);
+  });
+
+  it('brings the ramp back when the athlete picks a warm-up mode', () => {
+    const skipped = skipSessionWarmup(session);
+    const restored = restoreSessionWarmup(skipped);
+    expect(restored.exercises[0].warmupSkipped).toBe(false);
+    expect(restored.exercises[1].warmupSkipped).toBe(false);
+    expect(restoreSessionWarmup(session)).toBe(session);
   });
 });

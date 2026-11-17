@@ -183,6 +183,19 @@ export const skipSessionWarmup = (session) => {
   };
 };
 
+// Choosing a warm-up mode after skipping brings the ramp back for this exercise.
+export const restoreSessionWarmup = (session) => {
+  const index = currentExerciseIndex(session);
+  if (index === -1) return session;
+  if (!session.exercises[index].warmupSkipped) return session;
+  return {
+    ...session,
+    exercises: session.exercises.map((ex, i) => (
+      i === index ? { ...ex, warmupSkipped: false } : ex
+    ))
+  };
+};
+
 export const sessionTotals = (session) => {
   const exercises = Array.isArray(session?.exercises) ? session.exercises : [];
   let sets = 0;
