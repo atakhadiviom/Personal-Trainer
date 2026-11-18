@@ -461,4 +461,152 @@ describe('WorkoutSession', () => {
     setup();
     expect(screen.queryByTestId('ws-plates')).not.toBeInTheDocument();
   });
+
+  describe('busy rack substitution', () => {
+    const PUSH_DAY = {
+      id: 'day6',
+      label: 'Barbell Strength',
+      exercises: [
+        {
+          name: 'Barbell Bench Press',
+          sets: 3,
+          reps: '5',
+          rest: '150s',
+          weight: '100kg',
+          guide: 'Tuck the elbows to 45°.'
+        },
+        { name: 'Cable Row', sets: 2, reps: '10-12', rest: '60s', weight: '30kg' }
+      ]
+    };
+
+    const openSwaps = async (user) => {
+      await user.click(screen.getByRole('button', { name: /Rack.s busy/i }));
+      return screen.getByTestId('ws-swap-panel');
+    };
+
+    it('keeps the swap offer closed until the athlete needs it', () => {
+      setup({ day: PUSH_DAY });
+      const button = screen.getByRole('button', { name: /Rack.s busy/i });
+      expect(button).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.queryByTestId('ws-swap-panel')).not.toBeInTheDocument();
+    });
+
+    it('lists same-pattern lifts on different kit with a starting load', async () => {
+      const user = userEvent.setup();
+      setup({ day: PUSH_DAY });
+      const panel = await openSwaps(user);
+
+      expect(panel).toHaveTextContent('Horizontal push · different kit');
+      const names = screen.getAllByRole('button', { name: /^Swap to / }).map(button => button.getAttribute('aria-label'));
+      expect(names).toEqual([
+        'Swap to Dumbbell Bench Press',
+        'Swap to Standing Cable Chest Press',
+        'Swap to Chest Press Machine'
+      ]);
+      expect(screen.getAllByTestId('ws-swap-load').map(node => node.textContent)).toEqual([
+        '≈ 2 × 37.5 kg',
+        '≈ 90 kg',
+        '≈ 100 kg'
+      ]);
+      expect(panel).toHaveTextContent('3 × 5 and 150s rest carry over');
+    });
+
+    it('follows the weight in the box, not the plan string', async () => {
+      const user = userEvent.setup();
+      setup({ day: PUSH_DAY });
+
+      const field = screen.getByLabelText(/Weight in kg for Barbell Bench Press/i);
+      await user.clear(field);
+      await user.type(field, '60');
+      await openSwaps(user);
+
+      expect(screen.getAllByTestId('ws-swap-load')[0]).toHaveTextContent('≈ 2 × 22.5 kg');
+    });
+
+    it('swaps the lift and keeps sets, reps, rest and progress', async () => {
+      const user = userEvent.setup();
+      setup({ day: PUSH_DAY });
+      await openSwaps(user);
+
+      await user.click(screen.getByRole('button', { name: 'Swap to Dumbbell Bench Press' }));
+
+      expect(screen.getByTestId('ws-exercise-name')).toHaveTextContent('Dumbbell Bench Press');
+      expect(screen.getByLabelText(/Weight in kg for Dumbbell Bench Press/i)).toHaveValue(75);
+      expect(screen.getByLabelText(/^Reps for/i)).toHaveValue(5);
+      expect(screen.getByText(/Press both bells from chest level/i)).toBeInTheDocument();
+      expect(screen.getByText('3 × 5', { exact: false })).toBeInTheDocument();
+      expect(screen.getByText(/rest 150s/i)).toBeInTheDocument();
+      expect(screen.getByTestId('ws-progress-label')).toHaveTextContent('0 / 5 sets');
+      // The closed panel leaves no swap button behind, only the undo strip.
+      expect(screen.queryByTestId('ws-swap-panel')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Rack.s busy/i })).not.toBeInTheDocument();
+    });
+
+    it('labels the swap and puts the plan lift back in one tap', async () => {
+      const user = userEvent.setup();
+      setup({ day: PUSH_DAY });
+      await openSwaps(user);
+      await user.click(screen.getByRole('button', { name: 'Swap to Dumbbell Bench Press' }));
+
+      const status = screen.getByTestId('ws-swap-status');
+      expect(status).toHaveTextContent('Swapped from Barbell Bench Press');
+
+      await user.click(screen.getByRole('button', { name: 'Undo' }));
+      expect(screen.getByTestId('ws-exercise-name')).toHaveTextContent('Barbell Bench Press');
+      expect(screen.getByLabelText(/Weight in kg for Barbell Bench Press/i)).toHaveValue(100);
+      expect(screen.queryByTestId('ws-swap-status')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Rack.s busy/i })).toBeInTheDocument();
+    });
+
+    it('rebuilds the warm-up ramp for the substitute\'s own load', async () => {
+      const user = userEvent.setup();
+      setup({ day: PUSH_DAY });
+
+      expect(screen.getByTestId('ws-warm')).toHaveTextContent('Ramp to 100 kg');
+      await openSwaps(user);
+      await user.click(screen.getByRole('button', { name: 'Swap to Dumbbell Bench Press' }));
+
+      const rungs = screen.getAllByTestId('ws-warm-rung');
+      expect(rungs.map(rung => rung.textContent)).toEqual([
+        expect.stringContaining('37.5 kg × 5'),
+        expect.stringContaining('52.5 kg × 3'),
+        expect.stringContaining('62.5 kg × 2')
+      ]);
+    });
+
+    it('stops offering a swap once the first set is logged', async () => {
+      const user = userEvent.setup();
+      setup({ day: PUSH_DAY });
+
+      expect(screen.getByRole('button', { name: /Rack.s busy/i })).toBeInTheDocument();
+      await logSetViaForm(user, { weight: 100, reps: 5 });
+      expect(screen.queryByTestId('ws-swap')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Rack.s busy/i })).not.toBeInTheDocument();
+    });
+
+    it('closes the swap panel from its × without changing the lift', async () => {
+      const user = userEvent.setup();
+      setup({ day: PUSH_DAY });
+      await openSwaps(user);
+
+      await user.click(screen.getByRole('button', { name: /Close swap options/i }));
+      expect(screen.queryByTestId('ws-swap-panel')).not.toBeInTheDocument();
+      expect(screen.getByTestId('ws-exercise-name')).toHaveTextContent('Barbell Bench Press');
+    });
+
+    it('shows nothing for cardio or a lift it cannot place', () => {
+      setup({
+        day: {
+          id: 'day7',
+          label: 'Mixed',
+          exercises: [
+            { name: 'Rowing Machine', sets: 1, reps: '5 min' },
+            { name: 'Turkish Get-Up', sets: 3, reps: '3' }
+          ]
+        }
+      });
+      expect(screen.queryByTestId('ws-swap')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Rack.s busy/i })).not.toBeInTheDocument();
+    });
+  });
 });

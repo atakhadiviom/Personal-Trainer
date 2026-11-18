@@ -3887,6 +3887,202 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); box-sh
 
 .ws-plates-advice.is-warn { color: #fbbf24; }
 
+/* ─── BUSY-RACK SUBSTITUTIONS ─── */
+.ws-swap { margin-top: 10px; }
+
+.ws-swap-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: color 0.16s var(--ease), border-color 0.16s var(--ease), background 0.16s var(--ease);
+}
+
+.ws-swap-open .ui-icon { width: 12px; height: 12px; color: var(--ice); }
+
+.ws-swap-open:hover {
+  color: var(--text-primary);
+  border-color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.ws-swap-open:focus-visible {
+  outline: none;
+  border-color: var(--ice);
+  box-shadow: 0 0 0 3px rgba(103, 232, 249, 0.15);
+}
+
+.ws-swap-panel {
+  padding: 10px 12px 8px;
+  border-radius: var(--r-md);
+  border: 1px solid rgba(103, 232, 249, 0.26);
+  background: rgba(103, 232, 249, 0.05);
+}
+
+.ws-swap-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.74rem;
+  color: var(--text-primary);
+}
+
+.ws-swap-head .ui-icon { width: 13px; height: 13px; color: var(--ice); }
+
+.ws-swap-close {
+  margin-left: auto;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.ws-swap-close:hover { color: var(--text-primary); }
+
+.ws-swap-close:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(103, 232, 249, 0.45);
+}
+
+.ws-swap-note {
+  margin: 5px 0 9px;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.ws-swap-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ws-swap-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px 9px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.ws-swap-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 170px;
+}
+
+.ws-swap-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.ws-swap-detail {
+  font-size: 0.7rem;
+  line-height: 1.4;
+  color: var(--text-dim);
+}
+
+.ws-swap-side {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-left: auto;
+}
+
+.ws-swap-load {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  white-space: nowrap;
+  color: var(--ice);
+}
+
+.ws-swap-load.is-open { color: var(--text-dim); font-family: inherit; }
+
+.ws-swap-use {
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(103, 232, 249, 0.45);
+  background: rgba(103, 232, 249, 0.14);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.16s var(--ease), border-color 0.16s var(--ease);
+}
+
+.ws-swap-use:hover { background: rgba(103, 232, 249, 0.22); border-color: var(--ice); }
+
+.ws-swap-use:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(103, 232, 249, 0.25);
+}
+
+.ws-swap-foot {
+  margin: 8px 0 0;
+  font-size: 0.68rem;
+  line-height: 1.4;
+  color: var(--text-dim);
+}
+
+.ws-swap-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-radius: var(--r-md);
+  border: 1px solid rgba(103, 232, 249, 0.28);
+  background: rgba(103, 232, 249, 0.07);
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+.ws-swap-status .ui-icon { width: 13px; height: 13px; color: var(--ice); flex: none; }
+
+.ws-swap-status strong { color: var(--text-primary); font-weight: 600; }
+
+.ws-swap-undo {
+  margin-left: auto;
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  color: var(--ice);
+  font-family: inherit;
+  font-size: 0.7rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.ws-swap-undo:hover { color: var(--text-primary); }
+
 .ws-auto {
   margin-top: 14px;
   padding: 10px 12px;

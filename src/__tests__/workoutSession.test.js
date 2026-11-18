@@ -17,6 +17,8 @@ import {
   sessionProgress,
   sessionTotals,
   skipExercise,
+  substituteSessionExercise,
+  restoreSessionExercise,
   undoLastSet,
   MAX_SETS
 } from '../utils/workoutSession';
@@ -199,6 +201,114 @@ describe('workoutSession engine', () => {
     const live = logSessionSet(createSession(DAY, { now: new Date() }), { weightKg: 40, reps: 9, rpe: 8 });
     saveActiveSession(live);
     expect(loadActiveSession().exercises[0].logged[0].rpe).toBe(8);
+  });
+
+  describe('busy-rack substitution', () => {
+    const swap = (session, overrides = {}) => substituteSessionExercise(session, {
+      name: 'Dumbbell Bench Press',
+      weight: '75',
+      guide: 'Press both bells from chest level.',
+      ...overrides
+    });
+
+    it('replaces the current lift and keeps sets, reps and rest', () => {
+      const session = createSession({
+        id: 'push',
+        label: 'Push Day',
+        exercises: [{ name: 'Barbell Bench Press', sets: 4, reps: '6-8', rest: '150s', weight: '100kg', guide: 'Tuck the elbows.' }]
+      }, { now: NOW });
+
+      const swapped = swap(session);
+      const exercise = swapped.exercises[0];
+      expect(exercise.name).toBe('Dumbbell Bench Press');
+      expect(exercise.targetSets).toBe(4);
+      expect(exercise.reps).toBe('6-8');
+      expect(exercise.rest).toBe('150s');
+      expect(exercise.weight).toBe('75');
+      expect(exercise.guide).toBe('Press both bells from chest level.');
+      expect(exercise.substitutedFrom).toEqual({
+        name: 'Barbell Bench Press',
+        weight: '100kg',
+        guide: 'Tuck the elbows.'
+      });
+    });
+
+    it('leaves every other exercise alone', () => {
+      const swapped = swap(createSession(DAY, { now: NOW }));
+      expect(swapped.exercises[1].name).toBe('Cable Row');
+      expect(swapped.exercises[1].substitutedFrom).toBeNull();
+    });
+
+    it('clears warm-up ticks because a warmed-up bench is not a warmed-up dumbbell', () => {
+      let session = createSession(DAY, { now: NOW });
+      session = {
+        ...session,
+        exercises: session.exercises.map((ex, i) => (i === 0 ? { ...ex, warmupDone: ['ramp50'], warmupSkipped: true } : ex))
+      };
+      const swapped = swap(session);
+      expect(swapped.exercises[0].warmupDone).toEqual([]);
+      expect(swapped.exercises[0].warmupSkipped).toBe(false);
+    });
+
+    it('refuses to swap after a set is logged', () => {
+      const logged = logSessionSet(createSession(DAY, { now: NOW }), { weightKg: 40, reps: 10 });
+      expect(swap(logged)).toBe(logged);
+    });
+
+    it('refuses an empty name, the same name, or a nameless session', () => {
+      const session = createSession(DAY, { now: NOW });
+      expect(substituteSessionExercise(session, { name: '   ' })).toBe(session);
+      expect(substituteSessionExercise(session, {})).toBe(session);
+      expect(substituteSessionExercise(session, { name: 'lat pulldown' })).toBe(session);
+      expect(substituteSessionExercise(null, { name: 'Push-Up' })).toBeNull();
+    });
+
+    it('keeps the plan lift as the undo target across two swaps', () => {
+      const first = swap(createSession(DAY, { now: NOW }), { name: 'Chest Press Machine', weight: '80' });
+      const second = swap(first, { name: 'Push-Up', weight: '' });
+      expect(second.exercises[0].name).toBe('Push-Up');
+      expect(second.exercises[0].substitutedFrom.name).toBe('Lat Pulldown');
+      expect(second.exercises[0].substitutedFrom.weight).toBe('40kg');
+    });
+
+    it('restores the plan lift in one step', () => {
+      const swapped = swap(createSession(DAY, { now: NOW }));
+      const restored = restoreSessionExercise(swapped);
+      expect(restored.exercises[0].name).toBe('Lat Pulldown');
+      expect(restored.exercises[0].weight).toBe('40kg');
+      expect(restored.exercises[0].guide).toBe('Drive elbows down');
+      expect(restored.exercises[0].substitutedFrom).toBeNull();
+    });
+
+    it('does nothing when there is nothing to restore', () => {
+      const session = createSession(DAY, { now: NOW });
+      expect(restoreSessionExercise(session)).toBe(session);
+      expect(restoreSessionExercise(null)).toBeNull();
+    });
+
+    it('refuses to restore over a logged set', () => {
+      const swapped = logSessionSet(swap(createSession(DAY, { now: NOW })), { weightKg: 75, reps: 10 });
+      expect(restoreSessionExercise(swapped)).toBe(swapped);
+    });
+
+    it('survives a session restore, undo included', () => {
+      const swapped = swap(createSession(DAY, { now: new Date() }));
+      saveActiveSession(swapped);
+      const restored = loadActiveSession();
+      expect(restored.exercises[0].name).toBe('Dumbbell Bench Press');
+      expect(restored.exercises[0].substitutedFrom.name).toBe('Lat Pulldown');
+      expect(restoreSessionExercise(restored).exercises[0].name).toBe('Lat Pulldown');
+    });
+
+    it('drops a malformed swap snapshot instead of trusting it', () => {
+      const restored = restoreSession({
+        dayId: 'day1',
+        label: 'Push',
+        startedAt: Date.now(),
+        exercises: [{ name: 'Push-Up', substitutedFrom: { name: '   ' } }]
+      });
+      expect(restored.exercises[0].substitutedFrom).toBeNull();
+    });
   });
 
   describe('persistence', () => {

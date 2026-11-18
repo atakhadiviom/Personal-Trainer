@@ -15,6 +15,7 @@
 import { parseRepTarget, parseWeightKg, getNextLoadSuggestion, getLastSessionSets } from './progressiveOverload';
 import { suggestNextSet, parseRpe } from './autoregulation';
 import { toggleWarmupRung, warmupRungIds } from './warmupRamp';
+import { MAX_NAME_LENGTH } from './substitution';
 
 export const ACTIVE_SESSION_KEY = 'novafit_active_session';
 export const SESSION_MAX_AGE_MS = 12 * 60 * 60 * 1000;
@@ -52,9 +53,15 @@ const normalizeExercise = (exercise = {}) => {
     logged: [],
     // Warm-up ramp ticks live on the exercise so a phone lock mid-ramp keeps them.
     warmupDone: [],
-    warmupSkipped: false
+    warmupSkipped: false,
+    // Set when the athlete swapped a busy rack for an equivalent lift.
+    substitutedFrom: null
   };
 };
+
+const cleanName = (value) => String(value ?? '').trim().slice(0, MAX_NAME_LENGTH);
+
+const cleanWeight = (value) => (value === null || value === undefined ? '' : String(value));
 
 export const createSession = (day = {}, { now = new Date() } = {}) => {
   const startedAt = now instanceof Date ? now.getTime() : Number(now);
@@ -134,6 +141,81 @@ export const skipExercise = (session) => {
   return {
     ...session,
     exercises: session.exercises.map((ex, i) => (i === index ? { ...ex, skipped: true } : ex))
+  };
+};
+
+// The rack is busy: replace the current lift with an equivalent one.
+// Sets, reps and rest are the session's promise to the athlete and never change.
+// The plan's own lift is kept on the exercise so one tap restores it, and any
+// logged set blocks the swap — moving a set to a different lift would poison
+// the PR and history for both of them.
+export const substituteSessionExercise = (session, substitute = {}) => {
+  const exercises = Array.isArray(session?.exercises) ? session.exercises : null;
+  if (!exercises) return session;
+  const index = currentExerciseIndex(session);
+  if (index === -1) return session;
+  const current = exercises[index];
+  if ((current.logged?.length || 0) > 0) return session;
+
+  const name = cleanName(substitute.name);
+  if (!name) return session;
+  if (name.toLowerCase() === String(current.name).toLowerCase()) return session;
+
+  const weight = substitute.weight === undefined ? cleanWeight(current.weight) : cleanWeight(substitute.weight);
+  const guide = substitute.guide === undefined ? current.guide : String(substitute.guide ?? '');
+
+  return {
+    ...session,
+    exercises: exercises.map((ex, i) => {
+      if (i !== index) return ex;
+      const original = ex.substitutedFrom || {
+        name: ex.name,
+        weight: cleanWeight(ex.weight),
+        guide: ex.guide || ''
+      };
+      return {
+        ...ex,
+        name,
+        weight,
+        guide,
+        // A warmed-up bench is not a warmed-up dumbbell.
+        warmupDone: [],
+        warmupSkipped: false,
+        substitutedFrom: {
+          name: cleanName(original.name),
+          weight: cleanWeight(original.weight),
+          guide: original.guide || ''
+        }
+      };
+    })
+  };
+};
+
+// One tap back to the plan's lift, before the first work set of the substitute.
+export const restoreSessionExercise = (session) => {
+  const exercises = Array.isArray(session?.exercises) ? session.exercises : null;
+  if (!exercises) return session;
+  const index = currentExerciseIndex(session);
+  if (index === -1) return session;
+  const current = exercises[index];
+  const original = current.substitutedFrom;
+  if (!original || !original.name) return session;
+  if ((current.logged?.length || 0) > 0) return session;
+
+  return {
+    ...session,
+    exercises: exercises.map((ex, i) => {
+      if (i !== index) return ex;
+      return {
+        ...ex,
+        name: cleanName(original.name),
+        weight: cleanWeight(original.weight),
+        guide: original.guide || '',
+        warmupDone: [],
+        warmupSkipped: false,
+        substitutedFrom: null
+      };
+    })
   };
 };
 
@@ -336,7 +418,15 @@ export const restoreSession = (raw, { now = Date.now(), maxAgeMs = SESSION_MAX_A
       warmupDone: Array.isArray(ex.warmupDone)
         ? [...new Set(ex.warmupDone.filter(id => typeof id === 'string'))].slice(0, 6)
         : [],
-      warmupSkipped: !!ex.warmupSkipped
+      warmupSkipped: !!ex.warmupSkipped,
+      // A swap made before a phone lock must survive the restore, undo included.
+      substitutedFrom: ex.substitutedFrom && typeof ex.substitutedFrom.name === 'string' && ex.substitutedFrom.name.trim()
+        ? {
+          name: cleanName(ex.substitutedFrom.name),
+          weight: cleanWeight(ex.substitutedFrom.weight),
+          guide: typeof ex.substitutedFrom.guide === 'string' ? ex.substitutedFrom.guide : ''
+        }
+        : null
     }))
   };
 };

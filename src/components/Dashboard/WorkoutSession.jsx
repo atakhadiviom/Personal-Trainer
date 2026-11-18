@@ -19,11 +19,17 @@ import {
   skipExercise,
   skipSessionWarmup,
   restoreSessionWarmup,
+  restoreSessionExercise,
+  substituteSessionExercise,
   toggleSessionWarmup,
   undoLastSet,
   MAX_REPS,
   MAX_WEIGHT_KG
 } from '../../utils/workoutSession';
+import {
+  patternLabelFor,
+  suggestSubstitutes
+} from '../../utils/substitution';
 import { RPE_MIN, RPE_MAX } from '../../utils/autoregulation';
 import { describeLoadStep, getLoadStep, onLoadStepChange } from '../../utils/loadSteps';
 import {
@@ -69,6 +75,9 @@ const WorkoutSession = ({ day, initialSession = null, setLog = {}, onLogSet, onC
   const [prCount, setPrCount] = useState(0);
   const [showSummary, setShowSummary] = useState(false);
   const [finishedEarly, setFinishedEarly] = useState(false);
+  // Which exercise's swap panel is open, by name. Deriving the open state from the
+  // name means moving to the next lift closes it without an effect.
+  const [swapOpenFor, setSwapOpenFor] = useState(null);
   const firstFieldRef = useRef(null);
   const completedRef = useRef(false);
   const finishedRef = useRef(false);
@@ -113,6 +122,17 @@ const WorkoutSession = ({ day, initialSession = null, setLog = {}, onLogSet, onC
     ? false
     : warmupRamp.length > 0 || warmupMode !== 'full' || !!exercise.warmupSkipped;
   const warmupOff = parseWarmupMode(warmupMode) === 'off';
+
+  // Busy-rack swaps: only before the first work set, because moving a logged set
+  // to another lift would corrupt both lifts' history. The estimate follows the
+  // weight in the box, not the plan string, so it matches what they are about to do.
+  const swapOpen = !!exercise && swapOpenFor === exercise.name;
+  const swapWeight = Number(weight) > 0 ? weight : exercise?.weight;
+  const substitutes = useMemo(() => {
+    if (!exercise || exercise.substitutedFrom) return [];
+    if ((exercise.logged?.length || 0) > 0) return [];
+    return suggestSubstitutes(exercise.name, { weightKg: swapWeight, step: loadStep });
+  }, [exercise, swapWeight, loadStep]);
 
   // Prefill the next set from the coach's target. Synced during render (the same
   // pattern MyPlan uses for its plan prop) so no cascading effect render is needed.
@@ -265,6 +285,25 @@ const WorkoutSession = ({ day, initialSession = null, setLog = {}, onLogSet, onC
     if (next !== session) setSession(next);
   };
 
+  const handleSubstitute = (suggestion) => {
+    const next = substituteSessionExercise(session, {
+      name: suggestion?.name,
+      weight: suggestion?.load?.weightKg ? String(suggestion.load.weightKg) : '',
+      guide: suggestion?.guide
+    });
+    if (next === session) return;
+    setSession(next);
+    setSwapOpenFor(null);
+    setRestLeft(0);
+  };
+
+  const handleSwapUndo = () => {
+    const next = restoreSessionExercise(session);
+    if (next === session) return;
+    setSession(next);
+    setSwapOpenFor(null);
+  };
+
   const handleUndo = () => {
     const next = undoLastSet(session);
     if (next === session) return;
@@ -415,6 +454,91 @@ const WorkoutSession = ({ day, initialSession = null, setLog = {}, onLogSet, onC
               </div>
               {exercise.guide && <p className="ws-guide">{exercise.guide}</p>}
             </div>
+
+            {exercise.substitutedFrom && (
+              <div className="ws-swap-status" data-testid="ws-swap-status" role="status">
+                <Icon name="swap" />
+                <span>
+                  Swapped from <strong>{exercise.substitutedFrom.name}</strong> — same sets,
+                  reps and rest.
+                </span>
+                {(exercise.logged?.length || 0) === 0 && (
+                  <button type="button" className="ws-swap-undo" onClick={handleSwapUndo}>
+                    Undo
+                  </button>
+                )}
+              </div>
+            )}
+
+            {substitutes.length > 0 && !exercise.substitutedFrom && (
+              <div className="ws-swap" data-testid="ws-swap">
+                {!swapOpen ? (
+                  <button
+                    type="button"
+                    className="ws-swap-open"
+                    onClick={() => setSwapOpenFor(exercise.name)}
+                    aria-expanded={false}
+                  >
+                    <Icon name="swap" /> Rack&apos;s busy? Swap the lift
+                  </button>
+                ) : (
+                  <div
+                    className="ws-swap-panel"
+                    role="group"
+                    aria-label={`Substitute exercises for ${exercise.name}`}
+                    data-testid="ws-swap-panel"
+                  >
+                    <div className="ws-swap-head">
+                      <Icon name="swap" />
+                      <strong>{patternLabelFor(exercise.name) || 'Same pattern'} · different kit</strong>
+                      <button
+                        type="button"
+                        className="ws-swap-close"
+                        onClick={() => setSwapOpenFor(null)}
+                        aria-label="Close swap options"
+                      >
+                        ×
+                      </button>
+                    </div>
+                    <p className="ws-swap-note">
+                      {exercise.targetSets} × {exercise.reps || 'the same reps'} and {exercise.rest} rest carry
+                      over. Loads are a starting estimate, rounded down to your gym&apos;s
+                      {' '}{describeLoadStep(loadStep)}.
+                    </p>
+                    <ul className="ws-swap-list">
+                      {substitutes.map(suggestion => (
+                        <li key={suggestion.name}>
+                          <div className="ws-swap-body">
+                            <span className="ws-swap-name">{suggestion.name}</span>
+                            <span className="ws-swap-detail">{suggestion.detail}</span>
+                          </div>
+                          <div className="ws-swap-side">
+                            <span
+                              className={`ws-swap-load ${suggestion.load.text ? '' : 'is-open'}`}
+                              title={suggestion.load.note}
+                              data-testid="ws-swap-load"
+                            >
+                              {suggestion.load.text ? `≈ ${suggestion.load.text}` : 'pick by feel'}
+                            </span>
+                            <button
+                              type="button"
+                              className="ws-swap-use"
+                              onClick={() => handleSubstitute(suggestion)}
+                              aria-label={`Swap to ${suggestion.name}`}
+                            >
+                              Use it
+                            </button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="ws-swap-foot">
+                      Log the first set and auto-regulation takes over from there.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="ws-set-dots" aria-hidden="true">
               {Array.from({ length: exercise.targetSets }).map((_, i) => {
